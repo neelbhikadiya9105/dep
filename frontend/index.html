@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory Avengers - Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon"><i class="fas fa-shield-halved"></i></div>
+        <h1>Inventory Avengers</h1>
+        <p>Sign in to your account</p>
+      </div>
+
+      <div id="alert-box"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email"><i class="fas fa-envelope" style="margin-right:6px;color:#94a3b8"></i>Email Address</label>
+          <input type="email" id="email" class="form-control" placeholder="owner@demo.com" required />
+        </div>
+        <div class="form-group">
+          <label for="password"><i class="fas fa-lock" style="margin-right:6px;color:#94a3b8"></i>Password</label>
+          <div style="position:relative">
+            <input type="password" id="password" class="form-control" placeholder="••••••••" required style="padding-right:40px" />
+            <button type="button" id="toggle-pw" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div style="text-align:right;margin-bottom:16px">
+          <a href="#" id="forgot-link" style="font-size:0.85rem;color:var(--primary)">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" id="login-btn">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+      </form>
+
+      <div style="margin-top:24px;padding:16px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0">
+        <p style="font-size:0.8rem;color:var(--gray);font-weight:600;margin-bottom:8px"><i class="fas fa-info-circle"></i> Demo Credentials</p>
+        <div style="font-size:0.8rem;color:#475569;display:flex;flex-direction:column;gap:4px">
+          <span><strong>Owner:</strong> owner@demo.com / password123</span>
+          <span><strong>Manager:</strong> manager@demo.com / password123</span>
+          <span><strong>Staff:</strong> staff@demo.com / password123</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;justify-content:center" id="seed-btn">
+          <i class="fas fa-database"></i> Initialize Demo Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // If already logged in, redirect
+    if (API.getToken()) window.location.href = '/dashboard.html';
+
+    const alertBox = document.getElementById('alert-box');
+    const loginBtn = document.getElementById('login-btn');
+
+    function showAlert(msg, type = 'error') {
+      alertBox.innerHTML = `<div class="alert alert-${type}"><i class="fas fa-${type === 'error' ? 'circle-xmark' : 'circle-check'}"></i>${msg}</div>`;
+    }
+
+    document.getElementById('toggle-pw').addEventListener('click', function () {
+      const pw = document.getElementById('password');
+      const icon = this.querySelector('i');
+      if (pw.type === 'password') {
+        pw.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        pw.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    });
+
+    document.getElementById('forgot-link').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      if (!email) return showAlert('Enter your email first', 'warning');
+      try {
+        const data = await API.post('/auth/forgot', { email });
+        showAlert(data.message, 'success');
+      } catch (err) {
+        showAlert(err.message);
+      }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.innerHTML = '';
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      loginBtn.innerHTML = '<span class="spinner"></span> Signing in...';
+      loginBtn.disabled = true;
+      try {
+        const data = await API.post('/auth/login', { email, password });
+        API.setAuth(data.token, data.user);
+        window.location.href = '/dashboard.html';
+      } catch (err) {
+        showAlert(err.message);
+        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+        loginBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('seed-btn').addEventListener('click', async function () {
+      this.innerHTML = '<span class="spinner" style="border-top-color:var(--dark)"></span> Seeding...';
+      this.disabled = true;
+      try {
+        const data = await API.get('/auth/seed');
+        showAlert('Demo users created! You can now log in.', 'success');
+      } catch (err) {
+        showAlert(err.message);
+      }
+      this.innerHTML = '<i class="fas fa-database"></i> Initialize Demo Data';
+      this.disabled = false;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports - Inventory Avengers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <i class="fas fa-shield-halved"></i>
+        <span>Inv</span>Avengers
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><i class="fas fa-gauge-high"></i> Dashboard</a>
+        <a href="inventory.html"><i class="fas fa-boxes-stacked"></i> Inventory</a>
+        <a href="sales.html"><i class="fas fa-cash-register"></i> Point of Sale</a>
+        <a href="reports.html" class="active"><i class="fas fa-chart-bar"></i> Reports</a>
+        <a href="returns.html"><i class="fas fa-rotate-left"></i> Returns</a>
+        <a href="approvals.html"><i class="fas fa-clipboard-check"></i> Approvals</a>
+      </nav>
+      <div class="sidebar-footer"><i class="fas fa-code"></i> Inventory Avengers v1.0</div>
+    </aside>
+
+    <div class="main-content">
+      <div class="topbar">
+        <h1><i class="fas fa-chart-bar" style="color:var(--primary);margin-right:8px"></i>Sales Reports</h1>
+        <div class="topbar-right">
+          <div class="user-info">
+            <div class="user-avatar" id="user-avatar">?</div>
+            <div>
+              <div style="font-weight:600;font-size:0.85rem" id="user-name">Loading...</div>
+              <div id="user-role-badge"></div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+      </div>
+
+      <div class="page-content">
+        <!-- Filters -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="section-title" style="margin-bottom:15px"><i class="fas fa-filter" style="color:var(--primary);margin-right:6px"></i>Filters</div>
+          <div class="toolbar" style="margin-bottom:0">
+            <div class="form-group" style="margin-bottom:0;flex:1;min-width:150px">
+              <label style="font-size:0.78rem">Start Date</label>
+              <input type="date" id="start-date" class="form-control" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;flex:1;min-width:150px">
+              <label style="font-size:0.78rem">End Date</label>
+              <input type="date" id="end-date" class="form-control" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;min-width:140px">
+              <label style="font-size:0.78rem">Payment Method</label>
+              <select id="payment-filter" class="form-control">
+                <option value="all">All Methods</option>
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+              </select>
+            </div>
+            <div style="align-self:flex-end">
+              <button class="btn btn-primary" id="apply-filter-btn"><i class="fas fa-search"></i> Apply</button>
+              <button class="btn btn-outline btn-sm" id="reset-filter-btn" style="margin-left:8px"><i class="fas fa-rotate"></i> Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="cards-grid">
+          <div class="card green">
+            <i class="fas fa-dollar-sign card-icon"></i>
+            <div class="card-title">Total Revenue</div>
+            <div class="card-value" id="card-revenue">$0</div>
+          </div>
+          <div class="card blue">
+            <i class="fas fa-shopping-bag card-icon"></i>
+            <div class="card-title">Total Orders</div>
+            <div class="card-value" id="card-orders">0</div>
+          </div>
+          <div class="card orange">
+            <i class="fas fa-chart-line card-icon"></i>
+            <div class="card-title">Total Profit</div>
+            <div class="card-value" id="card-profit">$0</div>
+          </div>
+          <div class="card purple">
+            <i class="fas fa-percent card-icon"></i>
+            <div class="card-title">Profit Margin</div>
+            <div class="card-value" id="card-margin">0%</div>
+          </div>
+        </div>
+
+        <div id="alert-box"></div>
+
+        <!-- Sales Table -->
+        <div class="section-header">
+          <span class="section-title"><i class="fas fa-receipt" style="color:var(--secondary);margin-right:6px"></i>Sales Transactions</span>
+          <span id="result-count" style="font-size:0.85rem;color:var(--gray)"></span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice ID</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Employee</th>
+                <th>Date & Time</th>
+              </tr>
+            </thead>
+            <tbody id="sales-table">
+              <tr><td colspan="7" class="empty-state"><i class="fas fa-receipt"></i>No sales records found</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/reports.js"></script>
+</body>
+</html>
