@@ -43,3 +43,6 @@ const API = {
     return user && roles.includes(user.role);
   }
 };
+
+export default API;
+

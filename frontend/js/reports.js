@@ -1,4 +1,5 @@
 /* reports.js */
+import API from './api.js';
 
 function fmt(n) {
   return '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

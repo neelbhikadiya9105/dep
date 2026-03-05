@@ -840,3 +840,48 @@ tr:hover td { background: #f8fafc; }
   .cards-grid { grid-template-columns: 1fr; }
   .page-content { padding: 15px; }
 }
+
+/* ===== Barcode Preview ===== */
+#barcode-preview {
+  max-width: 100%;
+  display: block;
+  border: 1px dashed #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+  min-height: 20px;
+}
+
+/* ===== Scanner Modal ===== */
+#qr-reader {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+#qr-reader video { width: 100% !important; border-radius: 8px; }
+
+/* ===== Receipt Preview ===== */
+.receipt-preview {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: monospace;
+}
+.receipt-preview-inner { max-width: 320px; margin: 0 auto; }
+
+/* ===== Store Selector ===== */
+#store-selector {
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+/* ===== Print styles ===== */
+@media print {
+  .sidebar, .topbar, .modal-overlay:not(#receipt-modal) { display: none !important; }
+  .receipt-preview { border: none; max-height: none; }
+}

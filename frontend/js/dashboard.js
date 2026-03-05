@@ -1,4 +1,6 @@
 /* dashboard.js */
+import API from './api.js';
+import Chart from 'chart.js/auto';
 
 function fmt(n) {
   return '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -180,11 +182,50 @@ async function init() {
   if (!API.requireAuth()) return;
   setupUser();
   setupLogout();
+  await setupStoreSelector();
 
+  loadDashboard();
+}
+
+async function setupStoreSelector() {
+  const sel = document.getElementById('store-selector');
+  if (!sel) return;
+  const user = API.getUser();
+  if (!user) return;
+
+  if (user.role === 'owner') {
+    sel.style.display = 'block';
+    try {
+      const stores = await API.get('/stores');
+      sel.innerHTML = '<option value="">All Stores</option>' +
+        stores.map(s => `<option value="${s._id}">${s.name}</option>`).join('');
+    } catch (_) {}
+    sel.addEventListener('change', () => {
+      localStorage.setItem('selectedStoreId', sel.value);
+      loadDashboard();
+    });
+    // Restore selection
+    const saved = localStorage.getItem('selectedStoreId');
+    if (saved) sel.value = saved;
+  } else {
+    sel.style.display = 'none';
+  }
+}
+
+function getSelectedStoreId() {
+  const user = API.getUser();
+  if (!user) return '';
+  if (user.role !== 'owner') return user.storeId || '';
+  return localStorage.getItem('selectedStoreId') || '';
+}
+
+async function loadDashboard() {
   try {
+    const storeId = getSelectedStoreId();
+    const storeQuery = storeId ? `?storeId=${storeId}` : '';
     const [reportData, products] = await Promise.all([
-      API.get('/reports/sales'),
-      API.get('/products')
+      API.get('/reports/sales' + storeQuery),
+      API.get('/products' + storeQuery)
     ]);
 
     const sales = reportData.sales || [];

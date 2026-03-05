@@ -6,6 +6,27 @@ const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
 
+// Helper: generate SKU
+function generateSKU() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let sku = 'SKU-';
+  for (let i = 0; i < 6; i++) sku += chars[Math.floor(Math.random() * chars.length)];
+  return sku;
+}
+
+// GET /api/products/lookup?barcode=VALUE
+router.get('/lookup', async (req, res) => {
+  try {
+    const { barcode } = req.query;
+    if (!barcode) return res.status(400).json({ message: 'barcode query param required' });
+    const product = await Product.findOne({ barcode }).populate('createdBy', 'name');
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/products
 router.get('/', async (req, res) => {
   try {
@@ -19,7 +40,17 @@ router.get('/', async (req, res) => {
 // POST /api/products
 router.post('/', authorize('owner', 'manager'), async (req, res) => {
   try {
-    const product = await Product.create({ ...req.body, createdBy: req.user.id });
+    const data = { ...req.body, createdBy: req.user.id };
+    if (!data.sku) {
+      // auto-generate unique SKU
+      let sku, exists;
+      do {
+        sku = generateSKU();
+        exists = await Product.findOne({ sku });
+      } while (exists);
+      data.sku = sku;
+    }
+    const product = await Product.create(data);
     res.status(201).json(product);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -71,3 +102,4 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
+

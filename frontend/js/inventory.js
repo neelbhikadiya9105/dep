@@ -1,4 +1,6 @@
 /* inventory.js */
+import API from './api.js';
+import JsBarcode from 'jsbarcode';
 
 let allProducts = [];
 let editingId = null;
@@ -84,6 +86,7 @@ function renderTable(products) {
       <tr ${rowClass}>
         <td style="font-weight:600">${p.name}</td>
         <td><span class="badge badge-gray">${p.category}</span></td>
+        <td style="font-family:monospace;font-size:0.78rem;color:var(--gray)">${p.sku || '—'}</td>
         <td>${fmt(p.costPrice)}</td>
         <td>${fmt(p.sellingPrice)}</td>
         <td style="color:var(--success);font-weight:600">${fmt(p.profit || (p.sellingPrice - p.costPrice))}</td>
@@ -117,6 +120,13 @@ function openModal(title = 'Add Product', product = null) {
   document.getElementById('prod-price').value = product ? product.sellingPrice : '';
   document.getElementById('prod-qty').value = product ? product.quantity : '';
   document.getElementById('prod-threshold').value = product ? product.threshold : 10;
+  document.getElementById('prod-sku').value = product ? (product.sku || '') : '';
+  document.getElementById('prod-barcode').value = product ? (product.barcode || '') : '';
+  // Clear barcode preview
+  const svgEl = document.getElementById('barcode-preview');
+  if (svgEl) svgEl.innerHTML = '';
+  // Render existing barcode
+  if (product && product.barcode) renderBarcodePreview(product.barcode);
   document.getElementById('product-modal').classList.remove('hidden');
 }
 
@@ -170,7 +180,10 @@ async function handleFormSubmit(e) {
     costPrice: parseFloat(document.getElementById('prod-cost').value),
     sellingPrice: parseFloat(document.getElementById('prod-price').value),
     quantity: parseInt(document.getElementById('prod-qty').value),
-    threshold: parseInt(document.getElementById('prod-threshold').value) || 10
+    threshold: parseInt(document.getElementById('prod-threshold').value) || 10,
+    sku: document.getElementById('prod-sku').value.trim() || undefined,
+    barcode: document.getElementById('prod-barcode').value.trim() || undefined,
+    barcodeType: 'CODE128'
   };
 
   try {
@@ -191,6 +204,49 @@ async function handleFormSubmit(e) {
   saveBtn.disabled = false;
 }
 
+function renderBarcodePreview(value) {
+  const svgEl = document.getElementById('barcode-preview');
+  if (!svgEl || !value) return;
+  try {
+    JsBarcode(svgEl, value, {
+      format: 'CODE128',
+      width: 2,
+      height: 60,
+      displayValue: true,
+      fontSize: 12
+    });
+  } catch (err) {
+    svgEl.innerHTML = `<text fill="red">Invalid barcode: ${err.message}</text>`;
+  }
+}
+
+function downloadBarcode() {
+  const svgEl = document.getElementById('barcode-preview');
+  if (!svgEl || !svgEl.innerHTML) return showAlert('Generate a barcode first.', 'warning');
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const sku = document.getElementById('prod-sku').value || 'barcode';
+  a.download = `${sku}.svg`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function generateBarcode() {
+  let sku = document.getElementById('prod-sku').value.trim();
+  if (!sku) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    sku = 'SKU-';
+    for (let i = 0; i < 6; i++) sku += chars[Math.floor(Math.random() * chars.length)];
+    document.getElementById('prod-sku').value = sku;
+  }
+  document.getElementById('prod-barcode').value = sku;
+  renderBarcodePreview(sku);
+}
+
 function init() {
   if (!API.requireAuth()) return;
   setupUser();
@@ -203,6 +259,19 @@ function init() {
   document.getElementById('search-input').addEventListener('input', filterProducts);
   document.getElementById('category-filter').addEventListener('change', filterProducts);
 
+  const genBarcodeBtn = document.getElementById('gen-barcode-btn');
+  if (genBarcodeBtn) genBarcodeBtn.addEventListener('click', generateBarcode);
+
+  const dlBarcodeBtn = document.getElementById('dl-barcode-btn');
+  if (dlBarcodeBtn) dlBarcodeBtn.addEventListener('click', downloadBarcode);
+
+  const barcodeInput = document.getElementById('prod-barcode');
+  if (barcodeInput) {
+    barcodeInput.addEventListener('input', () => {
+      renderBarcodePreview(barcodeInput.value.trim());
+    });
+  }
+
   document.getElementById('product-modal').addEventListener('click', (e) => {
     if (e.target === document.getElementById('product-modal')) closeModal();
   });
@@ -211,3 +280,8 @@ function init() {
 }
 
 init();
+
+// Expose to window for inline onclick handlers
+window.openEdit = openEdit;
+window.deleteProduct = deleteProduct;
+

@@ -1,4 +1,5 @@
 /* approvals.js */
+import API from './api.js';
 
 function fmtDate(d) {
   return new Date(d).toLocaleString('en-US', {
@@ -132,3 +133,7 @@ function init() {
 }
 
 init();
+
+// Expose to window for inline onclick handlers
+window.updateStatus = updateStatus;
+

@@ -1,21 +1,24 @@
-# Inventory Avengers 🛡️
+# Inventory Avengers 🛡️ (StockPilot)
 
-A full-stack inventory management system built with Node.js, Express, MongoDB, and vanilla JavaScript.
+A full-stack inventory management system built with Node.js, Express, MongoDB, and **Vite + ES modules**.
 
 ## Features
 
 - 🔐 **Authentication & Role-Based Access** — Owner, Manager, Staff roles with JWT
-- 📦 **Inventory Management** — Full product CRUD with low-stock alerts
-- 🛒 **Point of Sale (POS)** — Real-time cart, product grid, checkout
+- 📦 **Inventory Management** — Full product CRUD, auto-SKU generation, barcode generation & download
+- 🔲 **Barcode Scanning** — Scan barcodes in POS to instantly add products to cart
+- 🧾 **Receipt Preview & PDF Download** — Full receipt preview after checkout + downloadable PDF
+- 🏪 **Multi-Store Support** — Inventory per store; owner can manage all stores, staff/managers scoped to their store
+- 🛒 **Point of Sale (POS)** — Real-time cart, product grid, barcode scanner, checkout
 - 📊 **Reports & Analytics** — Revenue, profit, date-range filters, Chart.js graphs
 - ↩️ **Returns & Refunds** — Process returns, auto-restock inventory
 - ✅ **Approval Workflow** — Managers request deletions; owners approve/reject
-- 🎨 **Professional UI** — Sidebar layout, modals, badges, responsive design
+- ⚡ **Vite Frontend** — Hot reload in development, optimized production build
 
 ## Tech Stack
 
 **Backend:** Node.js, Express, MongoDB (Mongoose), JWT, bcryptjs  
-**Frontend:** Vanilla HTML/CSS/JS, Chart.js, Font Awesome, Google Fonts (Inter)
+**Frontend:** Vite (MPA), ES Modules, Chart.js, JsBarcode, Html5QrcodeScanner, jsPDF, Font Awesome
 
 ## Installation
 
@@ -38,16 +41,43 @@ npm install
 cp ../.env.example .env
 # Edit .env and set MONGO_URI and JWT_SECRET
 
-# 4. Start the server
-npm run dev        # development (nodemon)
-npm start          # production
+# 4. Install frontend dependencies (for development/build)
+cd ../frontend
+npm install
 ```
 
-The app will be available at **http://localhost:5000**
+### Running in Development
+
+Open two terminals:
+
+```bash
+# Terminal 1 — backend
+cd backend
+npm run dev        # starts Express on port 5000
+
+# Terminal 2 — frontend (Vite dev server with HMR + API proxy)
+cd frontend
+npm run dev        # starts Vite on port 5173 (proxies /api → 5000)
+```
+
+Visit **http://localhost:5173** for development.
+
+### Building for Production
+
+```bash
+cd frontend
+npm run build      # outputs to frontend/dist/
+```
+
+Then start the backend:
+```bash
+cd backend
+npm start          # serves frontend/dist/ at http://localhost:5000
+```
 
 ### Initialize Demo Data
 
-Visit `http://localhost:5000` and click **"Initialize Demo Data"** to create demo accounts, or call:
+Visit the login page and click **"Initialize Demo Data"**, or:
 
 ```bash
 curl http://localhost:5000/api/auth/seed
@@ -66,37 +96,44 @@ curl http://localhost:5000/api/auth/seed
 ```
 inve-proto/
 ├── backend/
-│   ├── config/db.js          # MongoDB connection
-│   ├── middleware/auth.js    # JWT protect & authorize
-│   ├── models/               # Mongoose schemas
-│   │   ├── User.js
-│   │   ├── Product.js
-│   │   ├── Sale.js
+│   ├── config/db.js
+│   ├── middleware/auth.js          # protect, authorize, authorizeStore
+│   ├── models/
+│   │   ├── User.js                 # + storeId field
+│   │   ├── Product.js              # + sku, barcode, barcodeType fields
+│   │   ├── Sale.js                 # + storeId, receiptNumber, tax, subtotal
+│   │   ├── Store.js                # NEW — multi-store
+│   │   ├── Inventory.js            # NEW — per-store stock levels
 │   │   ├── Return.js
 │   │   └── Approval.js
-│   ├── routes/               # Express route handlers
-│   │   ├── auth.js
-│   │   ├── products.js
-│   │   ├── sales.js
+│   ├── routes/
+│   │   ├── auth.js                 # includes storeId in JWT, seed creates default store
+│   │   ├── products.js             # + barcode lookup endpoint + SKU auto-gen
+│   │   ├── sales.js                # + storeId + receiptNumber
+│   │   ├── stores.js               # NEW — CRUD for stores
+│   │   ├── inventory.js            # NEW — per-store stock adjust & query
 │   │   ├── returns.js
 │   │   ├── reports.js
 │   │   └── approvals.js
-│   ├── server.js
+│   ├── server.js                   # serves frontend/dist/ (or frontend/ in dev)
 │   └── package.json
 ├── frontend/
-│   ├── css/style.css         # Global stylesheet
+│   ├── package.json                # Vite + chart.js + jsbarcode + html5-qrcode + jspdf
+│   ├── vite.config.js              # MPA config, /api proxy
+│   ├── css/style.css
 │   ├── js/
-│   │   ├── api.js            # Global API client
-│   │   ├── dashboard.js
-│   │   ├── inventory.js
-│   │   ├── sales.js
+│   │   ├── api.js                  # ES module (export default API)
+│   │   ├── login.js                # NEW — extracted login logic
+│   │   ├── dashboard.js            # ES module, Chart.js from npm
+│   │   ├── inventory.js            # + barcode generation
+│   │   ├── sales.js                # + barcode scanner + receipt PDF
 │   │   ├── reports.js
 │   │   ├── returns.js
 │   │   └── approvals.js
-│   ├── index.html            # Login page
-│   ├── dashboard.html
-│   ├── inventory.html
-│   ├── sales.html            # POS
+│   ├── index.html
+│   ├── dashboard.html              # + store selector
+│   ├── inventory.html              # + SKU/barcode fields in modal
+│   ├── sales.html                  # + scan button, scanner modal, receipt modal
 │   ├── reports.html
 │   ├── returns.html
 │   └── approvals.html
@@ -111,18 +148,24 @@ inve-proto/
 |--------|----------|-------------|------|
 | POST | /api/auth/login | Login | Public |
 | POST | /api/auth/register | Register user | Public |
-| GET | /api/auth/seed | Create demo users | Public |
+| GET | /api/auth/seed | Create demo users + default store | Public |
 | GET | /api/products | List all products | Any |
-| POST | /api/products | Create product | Owner/Manager |
+| GET | /api/products/lookup?barcode=X | Lookup product by barcode | Any |
+| POST | /api/products | Create product (auto-SKU) | Owner/Manager |
 | PUT | /api/products/:id | Update product | Owner/Manager |
 | DELETE | /api/products/:id | Delete product | Owner (or approval) |
 | POST | /api/sales | Create sale | Any |
 | GET | /api/sales | List sales | Any |
+| GET | /api/stores | List stores | Any |
+| POST | /api/stores | Create store | Owner |
+| PUT | /api/stores/:id | Update store | Owner |
+| DELETE | /api/stores/:id | Delete store | Owner |
+| GET | /api/inventory | Query stock levels | Any |
+| POST | /api/inventory/adjust | Adjust stock | Owner/Manager |
 | POST | /api/returns | Process return | Any |
 | GET | /api/returns | List returns | Any |
 | GET | /api/reports/sales | Sales report | Owner/Manager |
 | GET | /api/approvals | List approvals | Any |
-| POST | /api/approvals | Create request | Any |
 | PUT | /api/approvals/:id | Approve/Reject | Owner |
 
 ## Role Permissions
@@ -133,5 +176,9 @@ inve-proto/
 | Add/Edit products | ✅ | ✅ | ❌ |
 | Delete products | ✅ | ⚠️ (approval) | ❌ |
 | Process sales | ✅ | ✅ | ✅ |
+| Scan barcodes | ✅ | ✅ | ✅ |
 | View reports | ✅ | ✅ | ❌ |
 | Approve requests | ✅ | ❌ | ❌ |
+| Manage stores | ✅ | ❌ | ❌ |
+| Adjust inventory | ✅ | ✅ | ❌ |
+| Switch stores | ✅ | ❌ | ❌ |

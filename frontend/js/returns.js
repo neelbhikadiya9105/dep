@@ -1,4 +1,5 @@
 /* returns.js */
+import API from './api.js';
 
 let allSales = [];
 let selectedSale = null;

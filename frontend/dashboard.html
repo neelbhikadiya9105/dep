@@ -35,6 +35,7 @@
       <div class="topbar">
         <h1><i class="fas fa-gauge-high" style="color:var(--primary);margin-right:8px"></i>Dashboard</h1>
         <div class="topbar-right">
+          <select id="store-selector" class="form-control" style="display:none;max-width:160px"></select>
           <div class="user-info">
             <div class="user-avatar" id="user-avatar">?</div>
             <div>
@@ -160,8 +161,6 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/dashboard.js"></script>
+  <script type="module" src="js/dashboard.js"></script>
 </body>
 </html>

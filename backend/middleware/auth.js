@@ -25,4 +25,19 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+// Middleware that allows owner to bypass store scope; manager/staff must match their storeId
+const authorizeStore = (req, res, next) => {
+  if (req.user.role === 'owner') return next();
+  const requestedStoreId = req.query.storeId || (req.body && req.body.storeId);
+  if (!requestedStoreId) return next(); // no store filter requested
+  if (!req.user.storeId) {
+    return res.status(403).json({ message: 'Forbidden: no store assigned' });
+  }
+  if (String(req.user.storeId) !== String(requestedStoreId)) {
+    return res.status(403).json({ message: 'Forbidden: cross-store access denied' });
+  }
+  next();
+};
+
+module.exports = { protect, authorize, authorizeStore };
+

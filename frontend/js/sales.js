@@ -1,4 +1,7 @@
 /* sales.js - POS */
+import API from './api.js';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import { jsPDF } from 'jspdf';
 
 let allProducts = [];
 let cart = [];
@@ -134,6 +137,7 @@ function addToCart(productId) {
     cart.push({
       productId: product._id,
       name: product.name,
+      sku: product.sku || '',
       price: product.sellingPrice,
       qty: 1,
       maxQty: product.quantity
@@ -168,6 +172,9 @@ function clearCart() {
   renderCart();
 }
 
+let lastSale = null;
+let html5Scanner = null;
+
 async function checkout() {
   if (!cart.length) return;
 
@@ -178,19 +185,24 @@ async function checkout() {
   const customerName = document.getElementById('customer-name').value.trim() || 'Walk-in';
   const paymentMethod = document.getElementById('payment-method').value;
   const totalAmount = getCartTotal();
+  const storeId = getSelectedStoreId();
 
   try {
-    await API.post('/sales', {
+    const sale = await API.post('/sales', {
       items: cart.map(item => ({
         productId: item.productId,
         name: item.name,
+        sku: item.sku || '',
         qty: item.qty,
         price: item.price
       })),
       totalAmount,
       paymentMethod,
-      customerName
+      customerName,
+      storeId: storeId || undefined
     });
+
+    lastSale = sale;
 
     // Show success modal
     document.getElementById('success-customer').textContent = `Customer: ${customerName}`;
@@ -211,10 +223,215 @@ async function checkout() {
   checkoutBtn.disabled = false;
 }
 
+// ---- Barcode Scanner ----
+
+function openScannerModal() {
+  document.getElementById('scanner-modal').classList.remove('hidden');
+  const readerDiv = document.getElementById('qr-reader');
+  readerDiv.innerHTML = '';
+  html5Scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false);
+  html5Scanner.render(onScanSuccess, onScanError);
+}
+
+function closeScannerModal() {
+  document.getElementById('scanner-modal').classList.add('hidden');
+  if (html5Scanner) {
+    html5Scanner.clear().catch(() => {});
+    html5Scanner = null;
+  }
+  document.getElementById('qr-reader').innerHTML = '';
+}
+
+async function onScanSuccess(decodedText) {
+  closeScannerModal();
+  await lookupAndAddByBarcode(decodedText);
+}
+
+function onScanError() {}
+
+async function lookupAndAddByBarcode(barcode) {
+  if (!barcode) return;
+  try {
+    const product = await API.get(`/products/lookup?barcode=${encodeURIComponent(barcode)}`);
+    // Sync with allProducts
+    const existing = allProducts.find(p => p._id === product._id);
+    if (!existing) allProducts.push(product);
+    addToCart(product._id);
+    showAlert(`"${product.name}" added to cart.`, 'success');
+  } catch (err) {
+    showAlert(`Barcode not found: ${barcode}`, 'error');
+  }
+}
+
+// ---- Receipt ----
+
+function buildReceiptHTML(sale) {
+  const storeName = 'Inventory Avengers';
+  const date = new Date(sale.createdAt || Date.now()).toLocaleString();
+  const receiptNum = sale.receiptNumber || sale._id || 'N/A';
+  const items = sale.items || [];
+  const subtotal = sale.subtotal || sale.totalAmount;
+  const tax = sale.tax || 0;
+  const total = sale.totalAmount;
+
+  return `
+    <div class="receipt-preview-inner">
+      <div style="text-align:center;margin-bottom:12px">
+        <strong style="font-size:1.1rem">${storeName}</strong><br/>
+        <small style="color:var(--gray)">Receipt #${receiptNum}</small><br/>
+        <small style="color:var(--gray)">${date}</small>
+      </div>
+      <div style="margin-bottom:8px;font-size:0.85rem"><strong>Customer:</strong> ${sale.customerName || 'Walk-in'}</div>
+      <div style="margin-bottom:8px;font-size:0.85rem"><strong>Payment:</strong> ${(sale.paymentMethod || '').toUpperCase()}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:12px">
+        <thead>
+          <tr style="border-bottom:1px solid #e2e8f0">
+            <th style="text-align:left;padding:4px 0">Item</th>
+            <th style="text-align:center;padding:4px 0">Qty</th>
+            <th style="text-align:right;padding:4px 0">Price</th>
+            <th style="text-align:right;padding:4px 0">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(it => `
+            <tr style="border-bottom:1px solid #f1f5f9">
+              <td style="padding:3px 0">${it.name}</td>
+              <td style="text-align:center;padding:3px 0">${it.qty}</td>
+              <td style="text-align:right;padding:3px 0">$${Number(it.price).toFixed(2)}</td>
+              <td style="text-align:right;padding:3px 0">$${(it.price * it.qty).toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div style="font-size:0.85rem">
+        <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>$${Number(subtotal).toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between"><span>Tax</span><span>$${Number(tax).toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;margin-top:6px;border-top:2px solid var(--dark);padding-top:6px">
+          <span>Total</span><span>$${Number(total).toFixed(2)}</span>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:14px;color:var(--gray);font-size:0.8rem">Thank you for your purchase!</div>
+    </div>
+  `;
+}
+
+function showReceiptPreview() {
+  if (!lastSale) return;
+  document.getElementById('receipt-content').innerHTML = buildReceiptHTML(lastSale);
+  document.getElementById('receipt-modal').classList.remove('hidden');
+}
+
+function closeReceiptModal() {
+  document.getElementById('receipt-modal').classList.add('hidden');
+}
+
+function downloadReceiptPDF() {
+  if (!lastSale) return;
+  const doc = new jsPDF({ format: 'a6', unit: 'mm' });
+  const sale = lastSale;
+  const margin = 10;
+  let y = margin;
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Inventory Avengers', 74, y, { align: 'center' });
+  y += 6;
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Receipt #${sale.receiptNumber || sale._id || 'N/A'}`, 74, y, { align: 'center' });
+  y += 5;
+  doc.text(new Date(sale.createdAt || Date.now()).toLocaleString(), 74, y, { align: 'center' });
+  y += 7;
+
+  doc.text(`Customer: ${sale.customerName || 'Walk-in'}`, margin, y); y += 5;
+  doc.text(`Payment: ${(sale.paymentMethod || '').toUpperCase()}`, margin, y); y += 7;
+
+  // Items header
+  doc.setFont('helvetica', 'bold');
+  doc.text('Item', margin, y);
+  doc.text('Qty', 90, y, { align: 'right' });
+  doc.text('Price', 114, y, { align: 'right' });
+  doc.text('Total', 138, y, { align: 'right' });
+  y += 2;
+  doc.line(margin, y, 148 - margin, y);
+  y += 4;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  for (const it of (sale.items || [])) {
+    doc.text(String(it.name).substring(0, 30), margin, y);
+    doc.text(String(it.qty), 90, y, { align: 'right' });
+    doc.text(`$${Number(it.price).toFixed(2)}`, 114, y, { align: 'right' });
+    doc.text(`$${(it.price * it.qty).toFixed(2)}`, 138, y, { align: 'right' });
+    y += 5;
+  }
+
+  y += 2;
+  doc.line(margin, y, 148 - margin, y);
+  y += 4;
+
+  doc.setFontSize(9);
+  const subtotal = sale.subtotal || sale.totalAmount;
+  doc.text(`Subtotal: $${Number(subtotal).toFixed(2)}`, 138, y, { align: 'right' }); y += 5;
+  doc.text(`Tax: $${Number(sale.tax || 0).toFixed(2)}`, 138, y, { align: 'right' }); y += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text(`Total: $${Number(sale.totalAmount).toFixed(2)}`, 138, y, { align: 'right' }); y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('Thank you for your purchase!', 74, y, { align: 'center' });
+
+  doc.save(`receipt-${sale.receiptNumber || sale._id || 'sale'}.pdf`);
+}
+
+function getSelectedStoreId() {
+  const user = API.getUser();
+  if (!user) return '';
+  if (user.role !== 'owner') return user.storeId || '';
+  return localStorage.getItem('selectedStoreId') || '';
+}
+
+async function setupStoreSelector() {
+  const sel = document.getElementById('store-selector');
+  if (!sel) return;
+  const user = API.getUser();
+  if (!user) return;
+
+  if (user.role === 'owner') {
+    sel.style.display = 'block';
+    try {
+      const stores = await API.get('/stores');
+      sel.innerHTML = '<option value="">All Stores</option>' +
+        stores.map(s => `<option value="${s._id}">${s.name}</option>`).join('');
+    } catch (_) {}
+    sel.addEventListener('change', () => {
+      localStorage.setItem('selectedStoreId', sel.value);
+      reloadProducts();
+    });
+    const saved = localStorage.getItem('selectedStoreId');
+    if (saved) sel.value = saved;
+  } else {
+    sel.style.display = 'none';
+  }
+}
+
+async function reloadProducts() {
+  try {
+    allProducts = await API.get('/products');
+    populateCategories(allProducts);
+    filterProducts();
+  } catch (err) {
+    showAlert(err.message);
+  }
+}
+
 async function init() {
   if (!API.requireAuth()) return;
   setupUser();
   setupLogout();
+  await setupStoreSelector();
 
   document.getElementById('product-search').addEventListener('input', filterProducts);
   document.getElementById('category-filter').addEventListener('change', filterProducts);
@@ -225,7 +442,39 @@ async function init() {
   document.getElementById('new-sale-btn').addEventListener('click', () => {
     document.getElementById('success-modal').classList.add('hidden');
     document.getElementById('customer-name').value = '';
+    lastSale = null;
   });
+
+  // Barcode scanner
+  const scanBtn = document.getElementById('scan-barcode-btn');
+  if (scanBtn) scanBtn.addEventListener('click', openScannerModal);
+
+  const closeScannerBtn = document.getElementById('close-scanner-btn');
+  if (closeScannerBtn) closeScannerBtn.addEventListener('click', closeScannerModal);
+
+  const manualLookupBtn = document.getElementById('manual-barcode-btn');
+  if (manualLookupBtn) {
+    manualLookupBtn.addEventListener('click', () => {
+      const val = document.getElementById('manual-barcode-input').value.trim();
+      if (val) {
+        closeScannerModal();
+        lookupAndAddByBarcode(val);
+      }
+    });
+  }
+
+  // Receipt
+  const previewReceiptBtn = document.getElementById('preview-receipt-btn');
+  if (previewReceiptBtn) previewReceiptBtn.addEventListener('click', showReceiptPreview);
+
+  const downloadPdfBtn = document.getElementById('download-pdf-btn');
+  if (downloadPdfBtn) downloadPdfBtn.addEventListener('click', downloadReceiptPDF);
+
+  const closeReceiptBtn = document.getElementById('close-receipt-btn');
+  if (closeReceiptBtn) closeReceiptBtn.addEventListener('click', closeReceiptModal);
+
+  const printReceiptBtn = document.getElementById('print-receipt-btn');
+  if (printReceiptBtn) printReceiptBtn.addEventListener('click', () => window.print());
 
   try {
     allProducts = await API.get('/products');
@@ -239,3 +488,9 @@ async function init() {
 }
 
 init();
+
+// Expose to window for inline onclick handlers
+window.addToCart = addToCart;
+window.changeQty = changeQty;
+window.removeFromCart = removeFromCart;
+

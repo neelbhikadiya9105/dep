@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true },
   role: { type: String, enum: ['owner', 'manager', 'staff'], default: 'staff' },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store' },
   createdAt: { type: Date, default: Date.now }
 });
 

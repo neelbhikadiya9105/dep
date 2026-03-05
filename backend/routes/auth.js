@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Store = require('../models/Store');
 
 const signToken = (user) =>
   jwt.sign(
-    { id: user._id, name: user.name, email: user.email, role: user.role },
+    { id: user._id, name: user.name, email: user.email, role: user.role, storeId: user.storeId || null },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -40,7 +41,7 @@ router.post('/login', async (req, res) => {
     const token = signToken(user);
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, storeId: user.storeId || null }
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -67,7 +68,7 @@ router.post('/register', async (req, res) => {
     const token = signToken(user);
     res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, storeId: user.storeId || null }
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -82,10 +83,22 @@ router.post('/forgot', (req, res) => {
 // GET /api/auth/seed
 router.get('/seed', async (req, res) => {
   try {
+    // Ensure a default store exists
+    let defaultStore = await Store.findOne({ code: 'MAIN' });
+    if (!defaultStore) {
+      defaultStore = await Store.create({
+        name: 'Main Store',
+        code: 'MAIN',
+        address: '123 Main Street',
+        phone: '555-0100',
+        email: 'main@demo.com'
+      });
+    }
+
     const demoUsers = [
-      { name: 'Demo Owner', email: 'owner@demo.com', passwordHash: 'password123', role: 'owner' },
-      { name: 'Demo Manager', email: 'manager@demo.com', passwordHash: 'password123', role: 'manager' },
-      { name: 'Demo Staff', email: 'staff@demo.com', passwordHash: 'password123', role: 'staff' }
+      { name: 'Demo Owner', email: 'owner@demo.com', passwordHash: 'password123', role: 'owner', storeId: null },
+      { name: 'Demo Manager', email: 'manager@demo.com', passwordHash: 'password123', role: 'manager', storeId: defaultStore._id },
+      { name: 'Demo Staff', email: 'staff@demo.com', passwordHash: 'password123', role: 'staff', storeId: defaultStore._id }
     ];
 
     const results = [];
@@ -95,14 +108,20 @@ router.get('/seed', async (req, res) => {
         const created = await User.create(u);
         results.push(`Created: ${created.email}`);
       } else {
+        // Update storeId if missing
+        if (!exists.storeId && u.storeId) {
+          exists.storeId = u.storeId;
+          await exists.save({ validateBeforeSave: false });
+        }
         results.push(`Already exists: ${u.email}`);
       }
     }
 
-    res.json({ message: 'Seed complete', results });
+    res.json({ message: 'Seed complete', results, storeId: defaultStore._id });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
 module.exports = router;
+

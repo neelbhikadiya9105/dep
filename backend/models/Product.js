@@ -8,6 +8,9 @@ const productSchema = new mongoose.Schema(
     sellingPrice: { type: Number, required: true },
     quantity: { type: Number, required: true, default: 0 },
     threshold: { type: Number, default: 10 },
+    sku: { type: String, unique: true, sparse: true },
+    barcode: { type: String, default: '' },
+    barcodeType: { type: String, default: 'CODE128' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     createdAt: { type: Date, default: Date.now }
   },

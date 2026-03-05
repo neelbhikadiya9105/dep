@@ -31,6 +31,7 @@
       <div class="topbar">
         <h1><i class="fas fa-cash-register" style="color:var(--primary);margin-right:8px"></i>Point of Sale</h1>
         <div class="topbar-right">
+          <select id="store-selector" class="form-control" style="display:none;max-width:160px"></select>
           <div class="user-info">
             <div class="user-avatar" id="user-avatar">?</div>
             <div>
@@ -56,6 +57,9 @@
               <select id="category-filter" class="form-control" style="max-width:150px">
                 <option value="">All Categories</option>
               </select>
+              <button class="btn btn-outline btn-sm" id="scan-barcode-btn" title="Scan Barcode">
+                <i class="fas fa-barcode"></i> Scan
+              </button>
             </div>
             <div class="products-grid" id="products-grid">
               <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)">
@@ -127,13 +131,47 @@
       <p style="color:var(--gray);margin-bottom:5px" id="success-customer"></p>
       <p style="font-size:1.5rem;font-weight:700;color:var(--success);margin:15px 0" id="success-amount"></p>
       <p style="color:var(--gray);font-size:0.85rem" id="success-payment"></p>
-      <div style="margin-top:20px;display:flex;gap:10px;justify-content:center">
+      <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button class="btn btn-primary" id="new-sale-btn"><i class="fas fa-plus"></i> New Sale</button>
+        <button class="btn btn-outline" id="preview-receipt-btn"><i class="fas fa-receipt"></i> Preview Receipt</button>
+        <button class="btn btn-secondary btn-sm" id="download-pdf-btn"><i class="fas fa-file-pdf"></i> Download PDF</button>
       </div>
     </div>
   </div>
 
-  <script src="js/api.js"></script>
-  <script src="js/sales.js"></script>
+  <!-- Barcode Scanner Modal -->
+  <div class="modal-overlay hidden" id="scanner-modal">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-header">
+        <h3><i class="fas fa-barcode"></i> Scan Barcode</h3>
+        <button class="modal-close" id="close-scanner-btn"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div id="qr-reader" style="width:100%;min-height:200px"></div>
+      <div style="margin-top:16px">
+        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:8px">Or enter barcode manually:</p>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="manual-barcode-input" class="form-control" placeholder="Enter barcode value..." />
+          <button class="btn btn-primary btn-sm" id="manual-barcode-btn"><i class="fas fa-search"></i> Lookup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt Preview Modal -->
+  <div class="modal-overlay hidden" id="receipt-modal">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h3><i class="fas fa-receipt"></i> Receipt Preview</h3>
+        <button class="modal-close" id="close-receipt-btn"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div id="receipt-content" class="receipt-preview"></div>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" id="print-receipt-btn"><i class="fas fa-print"></i> Print</button>
+        <button class="btn btn-secondary btn-sm" id="download-pdf-btn-2" onclick="document.getElementById('download-pdf-btn').click()"><i class="fas fa-file-pdf"></i> PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/sales.js"></script>
 </body>
 </html>
