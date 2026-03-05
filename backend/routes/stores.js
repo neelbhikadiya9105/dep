@@ -137,9 +137,10 @@ router.get('/:id/stats', authorize('owner', 'manager'), async (req, res) => {
     // Monthly sales
     const monthlySalesAgg = await Sale.aggregate([
       { $match: { storeId: storeObjId, createdAt: { $gte: monthStart } } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
     ]);
     const monthlySales = monthlySalesAgg[0]?.total || 0;
+    const monthlySalesCount = monthlySalesAgg[0]?.count || 0;
 
     // Total sales count
     const totalSalesCount = await Sale.countDocuments({ storeId });
@@ -166,6 +167,7 @@ router.get('/:id/stats', authorize('owner', 'manager'), async (req, res) => {
         dailyProfit: dailySales * 0.2,
         monthlySales,
         monthlyProfit: monthlySales * 0.2,
+        monthlySalesCount,
         totalSalesCount,
         totalStaff,
         inventoryValue,

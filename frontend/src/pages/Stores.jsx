@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   FiMapPin, FiUser, FiUsers, FiDollarSign, FiTrendingUp,
-  FiShoppingBag, FiPackage, FiAlertTriangle, FiRefreshCw,
+  FiShoppingBag, FiShoppingCart, FiPackage, FiAlertTriangle, FiRefreshCw,
 } from 'react-icons/fi';
 import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
@@ -78,6 +78,7 @@ export default function Stores() {
         { label: 'Monthly Sales', value: fmt(stats.monthlySales), icon: FiDollarSign, color: 'text-blue-600', bg: 'bg-blue-50' },
         { label: 'Monthly Profit', value: fmt(stats.monthlyProfit), icon: FiTrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
         { label: 'Total Sales', value: stats.totalSalesCount, icon: FiShoppingBag, color: 'text-violet-600', bg: 'bg-violet-50' },
+        { label: 'Monthly Orders', value: stats.monthlySalesCount ?? 0, icon: FiShoppingCart, color: 'text-sky-600', bg: 'bg-sky-50' },
         { label: 'Active Staff', value: stats.totalStaff, icon: FiUsers, color: 'text-amber-600', bg: 'bg-amber-50' },
         { label: 'Inventory Value', value: fmt(stats.inventoryValue), icon: FiPackage, color: 'text-cyan-600', bg: 'bg-cyan-50' },
         { label: 'Low Stock Alerts', value: stats.lowStockCount, icon: FiAlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
