@@ -8,14 +8,16 @@ const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
 
-// GET /api/employees — owner: all, manager: own store
+// GET /api/employees — owner: all (with optional storeId filter), manager: own store
 router.get('/', async (req, res) => {
   try {
     let filter = { role: { $in: ['manager', 'staff'] } };
     if (req.user.role === 'manager') {
       if (!req.user.storeId) return res.json({ success: true, data: [] });
       filter.storeId = req.user.storeId;
-    } else if (req.user.role !== 'owner') {
+    } else if (req.user.role === 'owner') {
+      if (req.query.storeId) filter.storeId = req.query.storeId;
+    } else {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 

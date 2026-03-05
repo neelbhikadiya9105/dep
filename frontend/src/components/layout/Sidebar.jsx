@@ -13,8 +13,9 @@ const NAV_ITEMS = [
   { to: '/returns',   icon: FiRotateCcw,   label: 'Returns' },
   { to: '/reports',   icon: FiBarChart2,   label: 'Reports', roles: ['owner', 'manager'] },
   { to: '/approvals', icon: FiCheckSquare, label: 'Approvals' },
+  // Owner + Manager
+  { to: '/stores',       icon: FiMapPin,    label: 'Stores',             roles: ['owner', 'manager'] },
   // Owner-specific
-  { to: '/stores',       icon: FiMapPin,    label: 'Stores',             roles: ['owner'] },
   { to: '/audit-log',    icon: FiActivity,  label: 'Audit Log',          roles: ['owner'] },
   // Owner + Manager
   { to: '/employees',      icon: FiUsers,     label: 'Employees',          roles: ['owner', 'manager'] },

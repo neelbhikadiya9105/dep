@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Store = require('../models/Store');
 const User = require('../models/User');
+const Sale = require('../models/Sale');
+const Inventory = require('../models/Inventory');
 const AuditLog = require('../models/AuditLog');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -104,6 +107,73 @@ router.put('/:id/manager', authorize('owner'), async (req, res) => {
       metadata: { storeId: store._id, managerId: managerId || null }
     });
     res.json({ success: true, data: populated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/stores/:id/stats
+router.get('/:id/stats', authorize('owner', 'manager'), async (req, res) => {
+  try {
+    const storeId = req.params.id;
+
+    // Managers can only view stats for their own store
+    if (req.user.role === 'manager' && String(req.user.storeId) !== String(storeId)) {
+      return res.status(403).json({ success: false, message: 'Managers can only view stats for their own store' });
+    }
+
+    const now = new Date();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+    // Daily sales
+    const storeObjId = new mongoose.Types.ObjectId(storeId);
+    const dailySalesAgg = await Sale.aggregate([
+      { $match: { storeId: storeObjId, createdAt: { $gte: todayStart } } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ]);
+    const dailySales = dailySalesAgg[0]?.total || 0;
+
+    // Monthly sales
+    const monthlySalesAgg = await Sale.aggregate([
+      { $match: { storeId: storeObjId, createdAt: { $gte: monthStart } } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
+    ]);
+    const monthlySales = monthlySalesAgg[0]?.total || 0;
+    const monthlySalesCount = monthlySalesAgg[0]?.count || 0;
+
+    // Total sales count
+    const totalSalesCount = await Sale.countDocuments({ storeId });
+
+    // Total staff (approved users assigned to this store)
+    const totalStaff = await User.countDocuments({ storeId, status: 'approved' });
+
+    // Inventory value and low stock count
+    const inventoryRecords = await Inventory.find({ storeId }).populate('productId', 'sellingPrice');
+    let inventoryValue = 0;
+    let lowStockCount = 0;
+    for (const record of inventoryRecords) {
+      const price = record.productId?.sellingPrice || 0;
+      inventoryValue += record.quantity * price;
+      if (record.quantity <= record.threshold) {
+        lowStockCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        dailySales,
+        dailyProfit: dailySales * 0.2,
+        monthlySales,
+        monthlyProfit: monthlySales * 0.2,
+        monthlySalesCount,
+        totalSalesCount,
+        totalStaff,
+        inventoryValue,
+        lowStockCount
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

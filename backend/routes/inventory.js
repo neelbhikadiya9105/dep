@@ -9,7 +9,15 @@ router.use(protect);
 router.get('/', async (req, res) => {
   try {
     const filter = {};
-    if (req.query.storeId) filter.storeId = req.query.storeId;
+    if (req.user.role === 'manager' || req.user.role === 'staff') {
+      if (!req.user.storeId) {
+        return res.status(403).json({ message: 'No store assigned to your account' });
+      }
+      filter.storeId = req.user.storeId;
+    } else {
+      // owner: allow optional storeId query param
+      if (req.query.storeId) filter.storeId = req.query.storeId;
+    }
     if (req.query.productId) filter.productId = req.query.productId;
     const records = await Inventory.find(filter)
       .populate('productId', 'name sku category')
@@ -26,6 +34,12 @@ router.post('/adjust', authorize('owner', 'manager'), async (req, res) => {
     const { productId, storeId, quantity, threshold } = req.body;
     if (!productId || !storeId)
       return res.status(400).json({ message: 'productId and storeId are required' });
+
+    if (req.user.role === 'manager') {
+      if (String(req.user.storeId) !== String(storeId)) {
+        return res.status(403).json({ message: 'Managers can only adjust inventory for their own store' });
+      }
+    }
 
     const update = { updatedAt: new Date() };
     if (quantity !== undefined) update.quantity = quantity;

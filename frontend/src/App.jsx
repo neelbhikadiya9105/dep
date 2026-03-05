@@ -9,7 +9,7 @@ import Sales from './pages/Sales.jsx';
 import Returns from './pages/Returns.jsx';
 import Reports from './pages/Reports.jsx';
 import Approvals from './pages/Approvals.jsx';
-import OwnerStores from './pages/OwnerStores.jsx';
+import Stores from './pages/Stores.jsx';
 import EmployeeManagement from './pages/EmployeeManagement.jsx';
 import EmployeeProfile from './pages/EmployeeProfile.jsx';
 import UserApprovals from './pages/UserApprovals.jsx';
@@ -56,12 +56,12 @@ export default function App() {
           element={<ProtectedRoute><Approvals /></ProtectedRoute>}
         />
 
-        {/* Owner-only */}
+        {/* Owner + Manager — Stores */}
         <Route
           path="/stores"
           element={
-            <RoleRoute roles={['owner']}>
-              <OwnerStores />
+            <RoleRoute roles={['owner', 'manager']}>
+              <Stores />
             </RoleRoute>
           }
         />
