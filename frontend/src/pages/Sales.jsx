@@ -44,7 +44,7 @@ export default function Sales() {
   const loadProducts = useCallback(async () => {
     try {
       const data = await apiGet('/products');
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : (data.data || []));
     } catch (err) {
       showAlert(err.response?.data?.message || err.message);
     } finally {
@@ -55,7 +55,7 @@ export default function Sales() {
   useEffect(() => {
     loadProducts();
     if (user?.role === 'owner') {
-      apiGet('/stores').then(setStores).catch(() => {});
+      apiGet('/stores').then((data) => setStores(Array.isArray(data) ? data : (data.data || []))).catch(() => {});
     }
   }, [loadProducts, user]);
 
@@ -400,7 +400,6 @@ export default function Sales() {
             >
               <option value="cash">Cash</option>
               <option value="card">Card</option>
-              <option value="upi">UPI</option>
             </select>
 
             <button

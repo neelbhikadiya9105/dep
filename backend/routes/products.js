@@ -51,6 +51,28 @@ router.post('/', authorize('owner', 'manager'), async (req, res) => {
       data.sku = sku;
     }
     const product = await Product.create(data);
+
+    // Auto-create Inventory record if a storeId is available
+    const targetStoreId =
+      req.user.role === 'manager' || req.user.role === 'staff'
+        ? req.user.storeId
+        : req.body.storeId || null;
+    if (targetStoreId) {
+      const Inventory = require('../models/Inventory');
+      await Inventory.findOneAndUpdate(
+        { productId: product._id, storeId: targetStoreId },
+        {
+          $setOnInsert: {
+            productId: product._id,
+            storeId: targetStoreId,
+            quantity: req.body.quantity || 0,
+            threshold: req.body.threshold || 10,
+          },
+        },
+        { upsert: true, new: true }
+      );
+    }
+
     res.status(201).json(product);
   } catch (err) {
     res.status(500).json({ message: err.message });

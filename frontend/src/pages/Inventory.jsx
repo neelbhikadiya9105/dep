@@ -16,11 +16,13 @@ const EMPTY_FORM = {
 };
 
 export default function Inventory() {
-  const { checkRole } = useAuthStore();
+  const { user, checkRole } = useAuthStore();
   const isManager = checkRole('owner', 'manager');
   const isOwner = checkRole('owner');
 
-  const [products, setProducts] = useState([]);
+  const [inventoryRecords, setInventoryRecords] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [selectedStoreId, setSelectedStoreId] = useState('');
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
   const [search, setSearch] = useState('');
@@ -34,42 +36,52 @@ export default function Inventory() {
   const showAlert = (message, type = 'error') => setAlert({ message, type });
   const clearAlert = () => setAlert(null);
 
-  const loadProducts = useCallback(async () => {
+  const loadInventory = useCallback(async () => {
     try {
-      const data = await apiGet('/products');
-      setProducts(data);
+      const params = isOwner && selectedStoreId ? { storeId: selectedStoreId } : {};
+      const raw = await apiGet('/inventory', params);
+      setInventoryRecords(Array.isArray(raw) ? raw : (raw.data || []));
     } catch (err) {
       showAlert(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isOwner, selectedStoreId]);
 
-  useEffect(() => { loadProducts(); }, [loadProducts]);
+  useEffect(() => {
+    if (isOwner) {
+      apiGet('/stores').then((data) => setStores(Array.isArray(data) ? data : (data.data || []))).catch(() => {});
+    }
+  }, [isOwner]);
 
-  const filtered = products.filter((p) => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase());
-    const matchCat = !categoryFilter || p.category === categoryFilter;
+  useEffect(() => { loadInventory(); }, [loadInventory]);
+
+  const filtered = inventoryRecords.filter((rec) => {
+    const name = rec.productId?.name || '';
+    const category = rec.productId?.category || '';
+    const matchSearch = name.toLowerCase().includes(search.toLowerCase()) ||
+      category.toLowerCase().includes(search.toLowerCase());
+    const matchCat = !categoryFilter || category === categoryFilter;
     return matchSearch && matchCat;
   });
 
-  const categories = [...new Set(products.map((p) => p.category))].sort();
+  const categories = [...new Set(inventoryRecords.map((rec) => rec.productId?.category).filter(Boolean))].sort();
 
   // Summary cards
-  const totalValue = products.reduce((s, p) => s + p.costPrice * p.quantity, 0);
-  const totalProfit = products.reduce((s, p) => s + (p.sellingPrice - p.costPrice) * p.quantity, 0);
-  const lowCount = products.filter((p) => p.quantity <= p.threshold).length;
+  const totalValue = inventoryRecords.reduce((s, rec) => s + (rec.productId?.costPrice || 0) * rec.quantity, 0);
+  const totalProfit = inventoryRecords.reduce((s, rec) => s + ((rec.productId?.sellingPrice || 0) - (rec.productId?.costPrice || 0)) * rec.quantity, 0);
+  const lowCount = inventoryRecords.filter((rec) => rec.quantity <= rec.threshold).length;
 
-  const openModal = (product = null) => {
+  const openModal = (rec = null) => {
+    const product = rec?.productId;
     setEditingId(product?._id || null);
     setForm(product ? {
       name: product.name || '',
       category: product.category || '',
       costPrice: product.costPrice ?? '',
       sellingPrice: product.sellingPrice ?? '',
-      quantity: product.quantity ?? '',
-      threshold: product.threshold ?? 10,
+      quantity: rec.quantity ?? '',
+      threshold: rec.threshold ?? 10,
       sku: product.sku || '',
       barcode: product.barcode || '',
       barcodeType: product.barcodeType || 'CODE128',
@@ -131,6 +143,7 @@ export default function Inventory() {
       sku: form.sku.trim() || undefined,
       barcode: form.barcode.trim() || undefined,
       barcodeType: 'CODE128',
+      storeId: isOwner ? (selectedStoreId || undefined) : (user?.storeId || undefined),
     };
     try {
       if (editingId) {
@@ -141,7 +154,7 @@ export default function Inventory() {
         showAlert('Product added successfully.', 'success');
       }
       closeModal();
-      await loadProducts();
+      await loadInventory();
     } catch (err) {
       showAlert(err.response?.data?.message || err.message);
     } finally {
@@ -149,7 +162,9 @@ export default function Inventory() {
     }
   };
 
-  const handleDelete = async (product) => {
+  const handleDelete = async (rec) => {
+    const product = rec.productId;
+    if (!product?._id) return;
     if (!confirm(`Delete "${product.name}"?\n\nManagers will submit an approval request. Owners will delete immediately.`)) return;
     try {
       const res = await apiDelete(`/products/${product._id}`);
@@ -158,7 +173,7 @@ export default function Inventory() {
       } else {
         showAlert(`"${product.name}" deleted successfully.`, 'success');
       }
-      await loadProducts();
+      await loadInventory();
     } catch (err) {
       showAlert(err.response?.data?.message || err.message);
     }
@@ -170,7 +185,7 @@ export default function Inventory() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <Card title="Total Products" value={products.length} colorClass="text-indigo-600" bgClass="bg-indigo-50" />
+        <Card title="Total Products" value={inventoryRecords.length} colorClass="text-indigo-600" bgClass="bg-indigo-50" />
         <Card title="Low Stock" value={lowCount} colorClass="text-amber-600" bgClass="bg-amber-50" />
         <Card title="Inventory Value" value={fmt(totalValue)} colorClass="text-blue-600" bgClass="bg-blue-50" />
         <Card title="Potential Profit" value={fmt(totalProfit)} colorClass="text-emerald-600" bgClass="bg-emerald-50" />
@@ -178,7 +193,7 @@ export default function Inventory() {
 
       {/* Toolbar */}
       <div className="card p-4 mb-5 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-2 flex-1 w-full sm:w-auto">
+        <div className="flex gap-2 flex-1 w-full sm:w-auto flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
             <input
@@ -196,6 +211,16 @@ export default function Inventory() {
             <option value="">All Categories</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+          {isOwner && stores.length > 0 && (
+            <select
+              className="form-control w-44"
+              value={selectedStoreId}
+              onChange={(e) => setSelectedStoreId(e.target.value)}
+            >
+              <option value="">All Stores</option>
+              {stores.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
+            </select>
+          )}
         </div>
         {isManager && (
           <button onClick={() => openModal()} className="btn btn-primary shrink-0">
@@ -207,7 +232,7 @@ export default function Inventory() {
       {/* Table */}
       <div className="card overflow-hidden">
         {loading ? (
-          <LoadingSpinner text="Loading products..." />
+          <LoadingSpinner text="Loading inventory..." />
         ) : (
           <div className="table-wrapper">
             <table className="table">
@@ -219,6 +244,7 @@ export default function Inventory() {
                   <th>Cost</th>
                   <th>Price</th>
                   <th>Profit</th>
+                  {isOwner && <th>Store</th>}
                   <th>Qty</th>
                   <th>Threshold</th>
                   <th>Status</th>
@@ -228,26 +254,30 @@ export default function Inventory() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={isManager ? 10 : 9} className="text-center py-12 text-slate-400">
-                      No products found
+                    <td colSpan={isManager ? (isOwner ? 11 : 10) : (isOwner ? 10 : 9)} className="text-center py-12 text-slate-400">
+                      No inventory records found
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((p) => {
-                    const isLow = p.quantity <= p.threshold;
-                    const profit = p.sellingPrice - p.costPrice;
+                  filtered.map((rec) => {
+                    const p = rec.productId || {};
+                    const isLow = rec.quantity <= rec.threshold;
+                    const profit = (p.sellingPrice || 0) - (p.costPrice || 0);
                     return (
-                      <tr key={p._id} className={isLow ? 'bg-amber-50/50' : ''}>
-                        <td className="font-medium text-slate-800">{p.name}</td>
-                        <td><span className="badge badge-gray">{p.category}</span></td>
+                      <tr key={rec._id} className={isLow ? 'bg-amber-50/50' : ''}>
+                        <td className="font-medium text-slate-800">{p.name || '—'}</td>
+                        <td><span className="badge badge-gray">{p.category || '—'}</span></td>
                         <td className="font-mono text-xs text-slate-400">{p.sku || '—'}</td>
                         <td>{fmt(p.costPrice)}</td>
                         <td>{fmt(p.sellingPrice)}</td>
                         <td className="text-emerald-600 font-semibold">{fmt(profit)}</td>
-                        <td className={`font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}`}>{p.quantity}</td>
-                        <td className="text-slate-400">{p.threshold}</td>
+                        {isOwner && (
+                          <td className="text-slate-500 text-sm">{rec.storeId?.name || '—'}</td>
+                        )}
+                        <td className={`font-bold ${isLow ? 'text-red-600' : 'text-slate-800'}`}>{rec.quantity}</td>
+                        <td className="text-slate-400">{rec.threshold}</td>
                         <td>
-                          {p.quantity === 0
+                          {rec.quantity === 0
                             ? <span className="badge badge-danger">Out of Stock</span>
                             : isLow
                               ? <span className="badge badge-warning">Low Stock</span>
@@ -258,13 +288,13 @@ export default function Inventory() {
                           <td>
                             <div className="flex gap-1">
                               <button
-                                onClick={() => openModal(p)}
+                                onClick={() => openModal(rec)}
                                 className="btn btn-outline btn-sm"
                               >
                                 <FiEdit2 size={12} />
                               </button>
                               <button
-                                onClick={() => handleDelete(p)}
+                                onClick={() => handleDelete(rec)}
                                 className="btn btn-danger btn-sm"
                               >
                                 <FiTrash2 size={12} />

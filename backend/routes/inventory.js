@@ -9,18 +9,21 @@ router.use(protect);
 router.get('/', async (req, res) => {
   try {
     const filter = {};
+
     if (req.user.role === 'manager' || req.user.role === 'staff') {
+      // Force their storeId — ignore any query param
       if (!req.user.storeId) {
         return res.status(403).json({ message: 'No store assigned to your account' });
       }
       filter.storeId = req.user.storeId;
-    } else {
-      // owner: allow optional storeId query param
+    } else if (req.user.role === 'owner') {
+      // Owner can filter by storeId and/or productId optionally
       if (req.query.storeId) filter.storeId = req.query.storeId;
+      if (req.query.productId) filter.productId = req.query.productId;
     }
-    if (req.query.productId) filter.productId = req.query.productId;
+
     const records = await Inventory.find(filter)
-      .populate('productId', 'name sku category')
+      .populate('productId', 'name sku category costPrice sellingPrice')
       .populate('storeId', 'name code');
     res.json(records);
   } catch (err) {

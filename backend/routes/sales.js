@@ -31,19 +31,16 @@ router.post('/', async (req, res) => {
       if (!product) return res.status(404).json({ message: `Product ${item.productId} not found` });
 
       if (storeId) {
-        // Multi-store: update Inventory collection
+        // Multi-store: require Inventory record for this product+store
         const inv = await Inventory.findOne({ productId: item.productId, storeId });
-        const available = inv ? inv.quantity : product.quantity;
-        if (available < item.qty)
-          return res.status(400).json({ message: `Insufficient stock for ${product.name}` });
-        if (inv) {
-          inv.quantity -= item.qty;
-          inv.updatedAt = new Date();
-          await inv.save();
-        } else {
-          product.quantity -= item.qty;
-          await product.save();
+        if (!inv) {
+          return res.status(400).json({ message: `Product "${product.name}" is not available in this store's inventory` });
         }
+        if (inv.quantity < item.qty)
+          return res.status(400).json({ message: `Insufficient stock for ${product.name}` });
+        inv.quantity -= item.qty;
+        inv.updatedAt = new Date();
+        await inv.save();
       } else {
         if (product.quantity < item.qty)
           return res.status(400).json({ message: `Insufficient stock for ${product.name}` });

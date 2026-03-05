@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user?.role === 'owner') {
-      apiGet('/stores').then(setStores).catch(() => {});
+      apiGet('/stores').then((data) => setStores(Array.isArray(data) ? data : (data.data || []))).catch(() => {});
     }
   }, [user]);
 
@@ -48,7 +48,7 @@ export default function Dashboard() {
       apiGet(`/reports/dashboard${q}`),
     ]).then(([reportData, prods, stats]) => {
       setSales(reportData.sales || []);
-      setProducts(prods);
+      setProducts(Array.isArray(prods) ? prods : (prods.data || []));
       setDashStats(stats);
     }).catch(console.error).finally(() => setLoading(false));
   }, [getStoreId]);
