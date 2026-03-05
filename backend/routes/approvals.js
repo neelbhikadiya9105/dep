@@ -24,6 +24,16 @@ router.get('/pending-users', authorize('owner', 'manager'), async (req, res) => 
 router.put('/users/:id/approve', authorize('owner', 'manager'), async (req, res) => {
   try {
     const { role, storeId } = req.body;
+
+    if (req.user.role === 'manager') {
+      if (role && role !== 'staff') {
+        return res.status(403).json({ success: false, message: 'Managers can only approve staff accounts' });
+      }
+      if (storeId && String(storeId) !== String(req.user.storeId)) {
+        return res.status(403).json({ success: false, message: 'Managers can only approve users for their own store' });
+      }
+    }
+
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 

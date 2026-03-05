@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  FiDollarSign, FiShoppingBag, FiPackage, FiAlertTriangle,
+  FiDollarSign, FiShoppingBag, FiPackage, FiAlertTriangle, FiUsers,
 } from 'react-icons/fi';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]);
   const [stores, setStores] = useState([]);
+  const [dashStats, setDashStats] = useState(null);
   const [selectedStoreId, setSelectedStoreId] = useState(
     () => localStorage.getItem('selectedStoreId') || ''
   );
@@ -44,9 +45,11 @@ export default function Dashboard() {
     Promise.all([
       apiGet(`/reports/sales${q}`),
       apiGet(`/products${q}`),
-    ]).then(([reportData, prods]) => {
+      apiGet(`/reports/dashboard${q}`),
+    ]).then(([reportData, prods, stats]) => {
       setSales(reportData.sales || []);
       setProducts(prods);
+      setDashStats(stats);
     }).catch(console.error).finally(() => setLoading(false));
   }, [getStoreId]);
 
@@ -156,13 +159,23 @@ export default function Dashboard() {
           colorClass="text-blue-600"
           bgClass="bg-blue-50"
         />
-        <Card
-          title="Low Stock Alerts"
-          value={lowCount}
-          icon={<FiAlertTriangle size={18} />}
-          colorClass="text-amber-600"
-          bgClass="bg-amber-50"
-        />
+        {getStoreId() ? (
+          <Card
+            title="Store Staff"
+            value={dashStats?.staffCount ?? '—'}
+            icon={<FiUsers size={18} />}
+            colorClass="text-violet-600"
+            bgClass="bg-violet-50"
+          />
+        ) : (
+          <Card
+            title="Low Stock Alerts"
+            value={lowCount}
+            icon={<FiAlertTriangle size={18} />}
+            colorClass="text-amber-600"
+            bgClass="bg-amber-50"
+          />
+        )}
       </div>
 
       {/* Chart + Top Products */}

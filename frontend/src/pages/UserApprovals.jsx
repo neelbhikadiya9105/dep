@@ -5,9 +5,13 @@ import Alert from '../components/ui/Alert.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import Modal from '../components/ui/Modal.jsx';
 import { apiGet, apiPut } from '../api/axios.js';
+import useAuthStore from '../store/authStore.js';
 import { fmtDate } from '../utils/helpers.js';
 
 export default function UserApprovals() {
+  const { user } = useAuthStore();
+  const isManager = user?.role === 'manager';
+
   const [pendingUsers, setPendingUsers] = useState([]);
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,11 +59,17 @@ export default function UserApprovals() {
     }
   };
 
-  const handleReject = async (user) => {
-    if (!window.confirm(`Reject registration for "${user.name}"?`)) return;
+  const openApproveModal = (u) => {
+    setApproveModal(u);
+    setApproveRole('staff');
+    setApproveStoreId(isManager ? (user?.storeId || '') : '');
+  };
+
+  const handleReject = async (u) => {
+    if (!window.confirm(`Reject registration for "${u.name}"?`)) return;
     try {
-      await apiPut(`/approvals/users/${user._id}/reject`);
-      showAlert(`${user.name}'s registration rejected`, 'success');
+      await apiPut(`/approvals/users/${u._id}/reject`);
+      showAlert(`${u.name}'s registration rejected`, 'success');
       await loadData();
     } catch (err) {
       showAlert(err.response?.data?.message || err.message);
@@ -94,21 +104,21 @@ export default function UserApprovals() {
               </tr>
             </thead>
             <tbody>
-              {pendingUsers.map((user) => (
-                <tr key={user._id}>
-                  <td className="font-medium text-slate-800">{user.name}</td>
-                  <td className="text-slate-500">{user.email}</td>
-                  <td className="text-slate-400 text-xs">{fmtDate(user.createdAt)}</td>
+              {pendingUsers.map((u) => (
+                <tr key={u._id}>
+                  <td className="font-medium text-slate-800">{u.name}</td>
+                  <td className="text-slate-500">{u.email}</td>
+                  <td className="text-slate-400 text-xs">{fmtDate(u.createdAt)}</td>
                   <td>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => { setApproveModal(user); setApproveRole('staff'); setApproveStoreId(''); }}
+                        onClick={() => openApproveModal(u)}
                         className="btn btn-success btn-sm"
                       >
                         <FiUserCheck size={13} /> Approve
                       </button>
                       <button
-                        onClick={() => handleReject(user)}
+                        onClick={() => handleReject(u)}
                         className="btn btn-danger btn-sm"
                       >
                         <FiUserX size={13} /> Reject
@@ -135,9 +145,10 @@ export default function UserApprovals() {
               value={approveRole}
               onChange={(e) => setApproveRole(e.target.value)}
               required
+              disabled={isManager}
             >
               <option value="staff">Staff</option>
-              <option value="manager">Manager</option>
+              {!isManager && <option value="manager">Manager</option>}
             </select>
           </div>
           <div>
@@ -146,6 +157,7 @@ export default function UserApprovals() {
               className="form-control"
               value={approveStoreId}
               onChange={(e) => setApproveStoreId(e.target.value)}
+              disabled={isManager}
             >
               <option value="">-- No Store --</option>
               {stores.map((s) => (

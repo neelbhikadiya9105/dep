@@ -1,12 +1,14 @@
 export function fmt(n) {
-  return '$' + Number(n || 0).toLocaleString('en-US', {
+  return Number(n || 0).toLocaleString('en-CA', {
+    style: 'currency',
+    currency: 'CAD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
 export function fmtDate(d) {
-  return new Date(d).toLocaleString('en-US', {
+  return new Date(d).toLocaleString('en-CA', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -16,7 +18,7 @@ export function fmtDate(d) {
 }
 
 export function fmtShortDate(d) {
-  return new Date(d).toLocaleString('en-US', {
+  return new Date(d).toLocaleString('en-CA', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -25,7 +27,7 @@ export function fmtShortDate(d) {
 }
 
 export function getDayKey(date) {
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return new Date(date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
 }
 
 export function getLast7Days() {

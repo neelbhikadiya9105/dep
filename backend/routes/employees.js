@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Store = require('../models/Store');
 const AuditLog = require('../models/AuditLog');
 const Notification = require('../models/Notification');
 const { protect, authorize } = require('../middleware/auth');
@@ -50,6 +51,9 @@ router.get('/:id', authorize('owner', 'manager'), async (req, res) => {
 // PUT /api/employees/:id/promote — promote staff → manager
 router.put('/:id/promote', authorize('owner', 'manager'), async (req, res) => {
   try {
+    if (req.user.role === 'manager') {
+      return res.status(403).json({ success: false, message: 'Managers cannot promote employees to Manager role' });
+    }
     const employee = await User.findById(req.params.id);
     if (!employee) return res.status(404).json({ success: false, message: 'Employee not found' });
     if (employee.role !== 'staff') {
@@ -181,8 +185,9 @@ router.delete('/:id', authorize('owner'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot remove owner account' });
     }
 
-    employee.status = 'deactivated';
-    await employee.save({ validateBeforeSave: false });
+    await User.findByIdAndDelete(req.params.id);
+
+    await Store.updateMany({ managerId: employee._id }, { managerId: null });
 
     await AuditLog.create({
       actorId: req.user.id,

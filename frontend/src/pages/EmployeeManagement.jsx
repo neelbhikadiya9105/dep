@@ -128,7 +128,7 @@ export default function EmployeeManagement() {
                       >
                         <FiEye size={12} />
                       </Link>
-                      {emp.role === 'staff' && (
+                      {emp.role === 'staff' && isOwner && (
                         <button
                           onClick={() => handleAction(`/employees/${emp._id}/promote`)}
                           className="btn btn-success btn-sm"
