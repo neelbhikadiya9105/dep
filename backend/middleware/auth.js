@@ -26,7 +26,10 @@ const protect = async (req, res, next) => {
       role: user.role,
       status: user.status,
       storeId: user.storeId ? user.storeId.toString() : null,
-      mustChangePassword: user.mustChangePassword
+      mustChangePassword: user.mustChangePassword,
+      displayName: user.displayName || '',
+      avatar: user.avatar || '',
+      currency: user.currency || 'INR',
     };
     next();
   } catch (err) {

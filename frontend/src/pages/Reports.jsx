@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FiFilter, FiRotateCcw, FiDollarSign, FiShoppingBag, FiTrendingUp, FiPercent } from 'react-icons/fi';
+import { FiFilter, FiRotateCcw, FiDollarSign, FiShoppingBag, FiTrendingUp, FiPercent, FiDownload } from 'react-icons/fi';
+import jsPDF from 'jspdf';
 import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import Alert from '../components/ui/Alert.jsx';
 import Card from '../components/ui/Card.jsx';
@@ -7,6 +8,22 @@ import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { apiGet } from '../api/axios.js';
 import useAuthStore from '../store/authStore.js';
 import { fmt, fmtDate } from '../utils/helpers.js';
+
+const DATE_PRESETS = [
+  { label: 'Last 5 Days', days: 5 },
+  { label: 'Last 15 Days', days: 15 },
+  { label: 'Last 30 Days', days: 30 },
+];
+
+function datePresetLabel(startDate, endDate) {
+  const today = new Date().toISOString().split('T')[0];
+  for (const p of DATE_PRESETS) {
+    const d = new Date();
+    d.setDate(d.getDate() - p.days + 1);
+    if (startDate === d.toISOString().split('T')[0] && endDate === today) return p.label;
+  }
+  return 'Custom';
+}
 
 export default function Reports() {
   const user = useAuthStore((s) => s.user);
@@ -64,12 +81,131 @@ export default function Reports() {
     setPaymentFilter('all');
     setSelectedStoreId('');
     localStorage.setItem('selectedStoreId', '');
-    loadReports();
+    // Reload after a short tick so state updates propagate
+    setTimeout(() => loadReports(), 0);
+  };
+
+  const applyPreset = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days + 1);
+    setStartDate(d.toISOString().split('T')[0]);
+    setEndDate(today);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const margin = 15;
+    let y = margin;
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    const rangeLabel = datePresetLabel(startDate, endDate);
+    const fileName = `Report_${rangeLabel.replace(/\s/g, '')}.pdf`;
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text('StockPilot — Sales Report', margin, y); y += 8;
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(100);
+    doc.text(`Period: ${startDate} to ${endDate}  |  Range: ${rangeLabel}`, margin, y); y += 5;
+    doc.text(`Generated: ${new Date().toLocaleString()}`, margin, y); y += 5;
+    if (paymentFilter !== 'all') doc.text(`Payment Filter: ${paymentFilter.toUpperCase()}`, margin, y);
+    y += 10;
+    doc.setTextColor(0);
+
+    // Revenue Summary
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.text('Revenue Summary', margin, y); y += 7;
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    const summaryRows = [
+      ['Total Revenue', fmt(summary.totalRevenue)],
+      ['Total Orders', String(summary.totalOrders)],
+      ['Estimated Profit', fmt(summary.totalProfit)],
+      ['Profit Margin', `${summary.profitMargin}%`],
+    ];
+    summaryRows.forEach(([k, v]) => {
+      doc.text(k + ':', margin, y);
+      doc.text(v, margin + 60, y);
+      y += 6;
+    });
+    y += 6;
+
+    // Sales Transactions
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.text('Sales Transactions', margin, y); y += 7;
+
+    // Table header
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.setFillColor(79, 70, 229);
+    doc.setTextColor(255);
+    doc.rect(margin, y - 4, pageWidth - margin * 2, 7, 'F');
+    const cols = [margin, margin + 28, margin + 65, margin + 95, margin + 125, margin + 150];
+    const headers = ['ID', 'Customer', 'Amount', 'Payment', 'Employee', 'Date'];
+    headers.forEach((h, i) => doc.text(h, cols[i], y));
+    y += 7;
+    doc.setTextColor(0);
+    doc.setFont(undefined, 'normal');
+
+    // Table rows
+    sales.forEach((s, idx) => {
+      if (y > 270) {
+        doc.addPage();
+        y = margin;
+      }
+      if (idx % 2 === 0) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(margin, y - 4, pageWidth - margin * 2, 6, 'F');
+      }
+      doc.text('#' + s._id.slice(-8).toUpperCase(), cols[0], y);
+      doc.text((s.customerName || 'Walk-in').slice(0, 18), cols[1], y);
+      doc.text(fmt(s.totalAmount), cols[2], y);
+      doc.text((s.paymentMethod || '').toUpperCase(), cols[3], y);
+      doc.text((s.employeeId?.name || 'N/A').slice(0, 14), cols[4], y);
+      doc.text(new Date(s.createdAt).toLocaleDateString(), cols[5], y);
+      y += 6;
+    });
+
+    y += 8;
+
+    // Profit Margin Breakdown
+    if (y > 250) { doc.addPage(); y = margin; }
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.text('Profit Margin Breakdown', margin, y); y += 7;
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Total Revenue: ${fmt(summary.totalRevenue)}`, margin, y); y += 6;
+    doc.text(`Estimated Profit (20%): ${fmt(summary.totalProfit)}`, margin, y); y += 6;
+    doc.text(`Profit Margin: ${summary.profitMargin}%`, margin, y); y += 6;
+    doc.text('Note: Profit is estimated at 20% of revenue.', margin, y);
+
+    doc.save(fileName);
   };
 
   return (
     <DashboardLayout>
       {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} />}
+
+      {/* Preset Buttons */}
+      <div className="flex gap-2 mb-3 flex-wrap">
+        {DATE_PRESETS.map((p) => (
+          <button
+            key={p.days}
+            className="btn btn-outline text-xs py-1.5"
+            onClick={() => applyPreset(p.days)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
 
       {/* Filters */}
       <div className="card p-4 mb-5 flex flex-col sm:flex-row gap-3 items-end">
@@ -114,6 +250,9 @@ export default function Reports() {
           </button>
           <button onClick={handleReset} className="btn btn-outline">
             <FiRotateCcw size={14} />
+          </button>
+          <button onClick={handleExportPDF} className="btn btn-outline" title="Export as PDF">
+            <FiDownload size={14} /> PDF
           </button>
         </div>
       </div>
@@ -189,7 +328,7 @@ export default function Reports() {
                       </td>
                       <td className="font-bold text-emerald-600">{fmt(s.totalAmount)}</td>
                       <td>
-                        <span className={`badge ${s.paymentMethod === 'cash' ? 'badge-success' : 'badge-info'}`}>
+                        <span className={`badge ${s.paymentMethod === 'cash' ? 'badge-success' : s.paymentMethod === 'upi' ? 'badge-warning' : 'badge-info'}`}>
                           {s.paymentMethod}
                         </span>
                       </td>

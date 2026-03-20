@@ -82,7 +82,7 @@ export default function Returns() {
         reason: returnReason,
         refundAmount: parseFloat(refundAmount),
       });
-      showAlert('Return processed successfully. Stock has been restocked.', 'success');
+      showAlert('Return processed successfully. ' + (returnReason === 'defective' ? 'Item NOT restocked (Defective).' : 'Stock has been restocked.'), 'success');
       setSelectedSale(null);
       setSaleIdInput('');
       setReturnProductId('');
@@ -178,11 +178,9 @@ export default function Returns() {
                 onChange={(e) => setReturnReason(e.target.value)}
                 required
               >
-                <option value="defective">Defective</option>
-                <option value="wrong_item">Wrong Item</option>
-                <option value="not_needed">Not Needed</option>
-                <option value="damaged">Damaged</option>
-                <option value="other">Other</option>
+                <option value="defective">Defective (not restocked)</option>
+                <option value="wrong_item">Wrong Item (restocked)</option>
+                <option value="others">Others (restocked)</option>
               </select>
             </div>
 

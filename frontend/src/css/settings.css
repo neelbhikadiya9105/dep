@@ -1,0 +1,218 @@
+/* =====================================================================
+   Settings Page CSS — StockPilot
+   ===================================================================== */
+
+.settings-page {
+  max-width: 760px;
+}
+
+/* ---- Section ---- */
+.settings-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.settings-section__header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-section__icon {
+  width: 32px;
+  height: 32px;
+  background: #ede9fe;
+  color: #4f46e5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-section__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.settings-section__body {
+  padding: 24px;
+}
+
+/* ---- Avatar Selection ---- */
+.settings-avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.settings-avatar-option {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.15s;
+  object-fit: cover;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  overflow: hidden;
+}
+
+.settings-avatar-option:hover {
+  border-color: #a5b4fc;
+  transform: scale(1.05);
+}
+
+.settings-avatar-option--selected {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.settings-avatar-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 3px solid #e2e8f0;
+}
+
+/* ---- Form Row ---- */
+.settings-form-row {
+  margin-bottom: 16px;
+}
+
+.settings-form-row label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.settings-form-row input,
+.settings-form-row select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.settings-form-row input:focus,
+.settings-form-row select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.settings-form-row input:disabled,
+.settings-form-row input[readonly] {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.settings-form-row__hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* ---- Currency Options ---- */
+.settings-currency-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.settings-currency-option {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.settings-currency-option:hover {
+  border-color: #a5b4fc;
+  background: #f5f3ff;
+}
+
+.settings-currency-option--selected {
+  border-color: #4f46e5;
+  background: #ede9fe;
+}
+
+.settings-currency-option__symbol {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.settings-currency-option__code {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+/* ---- Actions Row ---- */
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+/* ---- Danger Zone ---- */
+.settings-danger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: #fff;
+  border: 1.5px solid #fca5a5;
+  color: #dc2626;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.settings-danger-btn:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+@media (max-width: 600px) {
+  .settings-currency-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

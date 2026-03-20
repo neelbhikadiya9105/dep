@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import RoleRoute from './components/RoleRoute.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import Landing from './pages/Landing.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Inventory from './pages/Inventory.jsx';
 import Sales from './pages/Sales.jsx';
@@ -15,16 +16,19 @@ import EmployeeProfile from './pages/EmployeeProfile.jsx';
 import UserApprovals from './pages/UserApprovals.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 import ForbiddenPage from './pages/ForbiddenPage.jsx';
+import Settings from './pages/Settings.jsx';
+import SuperuserPanel from './pages/SuperuserPanel.jsx';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         {/* Public */}
+        <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forbidden" element={<ForbiddenPage />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/landing" replace />} />
 
         {/* Protected — any authenticated user */}
         <Route
@@ -46,7 +50,7 @@ export default function App() {
         <Route
           path="/reports"
           element={
-            <RoleRoute roles={['owner', 'manager']}>
+            <RoleRoute roles={['owner', 'manager', 'superuser']}>
               <Reports />
             </RoleRoute>
           }
@@ -54,6 +58,22 @@ export default function App() {
         <Route
           path="/approvals"
           element={<ProtectedRoute><Approvals /></ProtectedRoute>}
+        />
+
+        {/* Settings — all authenticated users */}
+        <Route
+          path="/settings"
+          element={<ProtectedRoute><Settings /></ProtectedRoute>}
+        />
+
+        {/* Superuser Panel */}
+        <Route
+          path="/superuser"
+          element={
+            <RoleRoute roles={['superuser']}>
+              <SuperuserPanel />
+            </RoleRoute>
+          }
         />
 
         {/* Owner + Manager — Stores */}

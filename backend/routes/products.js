@@ -53,10 +53,13 @@ router.post('/', authorize('owner', 'manager'), async (req, res) => {
     const product = await Product.create(data);
 
     // Auto-create Inventory record if a storeId is available
-    const targetStoreId =
-      req.user.role === 'manager' || req.user.role === 'staff'
-        ? req.user.storeId
-        : req.body.storeId || null;
+    let targetStoreId = null;
+    if (req.user.role === 'manager' || req.user.role === 'staff') {
+      targetStoreId = req.user.storeId;
+    } else if (req.user.role === 'owner') {
+      // For owners: use provided storeId or their own storeId (already on req.user)
+      targetStoreId = req.body.storeId || req.user.storeId || null;
+    }
     if (targetStoreId) {
       const Inventory = require('../models/Inventory');
       await Inventory.findOneAndUpdate(

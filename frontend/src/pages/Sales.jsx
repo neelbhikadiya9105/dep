@@ -400,6 +400,7 @@ export default function Sales() {
             >
               <option value="cash">Cash</option>
               <option value="card">Card</option>
+              <option value="upi">UPI</option>
             </select>
 
             <button
