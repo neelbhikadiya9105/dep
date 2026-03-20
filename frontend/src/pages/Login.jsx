@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiShield, FiLogIn } from 'react-icons/fi';
 import useAuthStore from '../store/authStore.js';
 import Alert from '../components/ui/Alert.jsx';
@@ -16,8 +16,7 @@ export default function Login() {
 
   // Already logged in → redirect
   if (isAuthenticated) {
-    navigate('/dashboard', { replace: true });
-    return null;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const showAlert = (message, type = 'error') => setAlert({ message, type });
