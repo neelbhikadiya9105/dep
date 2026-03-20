@@ -1,31 +1,47 @@
 const express = require('express');
 const router = express.Router();
 const Inventory = require('../models/Inventory');
-const { protect, authorize } = require('../middleware/auth');
+const Product = require('../models/Product');
+const { protect, authorize, blockSuperuser } = require('../middleware/auth');
 
-router.use(protect);
+router.use(protect, blockSuperuser);
 
-// GET /api/inventory?storeId=ID&productId=ID
+// GET /api/inventory
+// Returns all inventory records for the user's store, plus any products that
+// don't yet have an Inventory record (with quantity 0) so the view is always complete.
 router.get('/', async (req, res) => {
   try {
-    const filter = {};
-
-    if (req.user.role === 'manager' || req.user.role === 'staff') {
-      // Force their storeId — ignore any query param
-      if (!req.user.storeId) {
-        return res.status(403).json({ message: 'No store assigned to your account' });
-      }
-      filter.storeId = req.user.storeId;
-    } else if (req.user.role === 'owner') {
-      // Owner can filter by storeId and/or productId optionally
-      if (req.query.storeId) filter.storeId = req.query.storeId;
-      if (req.query.productId) filter.productId = req.query.productId;
+    const storeId = req.user.storeId;
+    if (!storeId) {
+      return res.status(403).json({ message: 'No store assigned to your account' });
     }
 
-    const records = await Inventory.find(filter)
-      .populate('productId', 'name sku category costPrice sellingPrice')
+    // Get existing inventory records for the store
+    const records = await Inventory.find({ storeId })
+      .populate('productId', 'name sku barcode category costPrice sellingPrice')
       .populate('storeId', 'name code');
-    res.json(records);
+
+    // Find products in this store that don't have an Inventory record yet
+    const inventoriedProductIds = records
+      .filter((r) => r.productId)
+      .map((r) => r.productId._id.toString());
+
+    const missingProducts = await Product.find({
+      storeId,
+      _id: { $nin: inventoriedProductIds },
+    });
+
+    // Build virtual inventory records for missing products (quantity 0)
+    const virtualRecords = missingProducts.map((p) => ({
+      _id: null,
+      productId: p,
+      storeId: { _id: storeId },
+      quantity: 0,
+      threshold: p.threshold || 10,
+      updatedAt: p.createdAt,
+    }));
+
+    res.json([...records, ...virtualRecords]);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -34,15 +50,11 @@ router.get('/', async (req, res) => {
 // POST /api/inventory/adjust
 router.post('/adjust', authorize('owner', 'manager'), async (req, res) => {
   try {
-    const { productId, storeId, quantity, threshold } = req.body;
+    const { productId, quantity, threshold } = req.body;
+    // Always use the storeId from the auth token — never trust the request body
+    const storeId = req.user.storeId;
     if (!productId || !storeId)
-      return res.status(400).json({ message: 'productId and storeId are required' });
-
-    if (req.user.role === 'manager') {
-      if (String(req.user.storeId) !== String(storeId)) {
-        return res.status(403).json({ message: 'Managers can only adjust inventory for their own store' });
-      }
-    }
+      return res.status(400).json({ message: 'productId is required and store must be assigned to your account' });
 
     const update = { updatedAt: new Date() };
     if (quantity !== undefined) update.quantity = quantity;

@@ -11,6 +11,7 @@ const productSchema = new mongoose.Schema(
     sku: { type: String, unique: true, sparse: true },
     barcode: { type: String, default: '' },
     barcodeType: { type: String, default: 'CODE128' },
+    storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     createdAt: { type: Date, default: Date.now }
   },

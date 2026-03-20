@@ -86,3 +86,66 @@
 .product-card.out-of-stock {
   @apply opacity-50 cursor-not-allowed hover:border-slate-100 hover:shadow-none;
 }
+
+/* ── Dark Mode ── */
+:root {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text: #1e293b;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-sidebar-bg: #1e293b;
+  --color-sidebar-text: #94a3b8;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-border: #334155;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .table-wrapper {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .table th {
+  background-color: #162032;
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .table td {
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .form-control {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+[data-theme="dark"] header {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .product-card {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+}

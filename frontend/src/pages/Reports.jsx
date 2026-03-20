@@ -7,7 +7,8 @@ import Card from '../components/ui/Card.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { apiGet } from '../api/axios.js';
 import useAuthStore from '../store/authStore.js';
-import { fmt, fmtDate } from '../utils/helpers.js';
+import { fmtDate } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/currency.js';
 
 const DATE_PRESETS = [
   { label: 'Last 5 Days', days: 5 },
@@ -28,6 +29,8 @@ function datePresetLabel(startDate, endDate) {
 export default function Reports() {
   const user = useAuthStore((s) => s.user);
   const isOwner = user?.role === 'owner';
+  const currency = user?.currency || 'INR';
+  const fmt = (v) => formatCurrency(v, currency);
 
   const now = new Date();
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
@@ -36,10 +39,6 @@ export default function Reports() {
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(today);
   const [paymentFilter, setPaymentFilter] = useState('all');
-  const [stores, setStores] = useState([]);
-  const [selectedStoreId, setSelectedStoreId] = useState(
-    () => localStorage.getItem('selectedStoreId') || ''
-  );
   const [sales, setSales] = useState([]);
   const [summary, setSummary] = useState({ totalRevenue: 0, totalOrders: 0, totalProfit: 0, profitMargin: 0 });
   const [loading, setLoading] = useState(true);
@@ -48,20 +47,12 @@ export default function Reports() {
   const showAlert = (message, type = 'error') => setAlert({ message, type });
   const clearAlert = () => setAlert(null);
 
-  useEffect(() => {
-    if (isOwner) {
-      apiGet('/stores').then(setStores).catch(() => {});
-    }
-  }, [isOwner]);
-
   const loadReports = useCallback(async () => {
     setLoading(true);
     const params = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     if (paymentFilter && paymentFilter !== 'all') params.paymentMethod = paymentFilter;
-    const storeId = isOwner ? selectedStoreId : (user?.storeId || '');
-    if (storeId) params.storeId = storeId;
     try {
       const data = await apiGet('/reports/sales', params);
       setSales(data.sales || []);
@@ -71,7 +62,7 @@ export default function Reports() {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, paymentFilter, selectedStoreId, isOwner, user]);
+  }, [startDate, endDate, paymentFilter]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
@@ -79,8 +70,6 @@ export default function Reports() {
     setStartDate(firstDay);
     setEndDate(today);
     setPaymentFilter('all');
-    setSelectedStoreId('');
-    localStorage.setItem('selectedStoreId', '');
     // Reload after a short tick so state updates propagate
     setTimeout(() => loadReports(), 0);
   };
@@ -209,24 +198,6 @@ export default function Reports() {
 
       {/* Filters */}
       <div className="card p-4 mb-5 flex flex-col sm:flex-row gap-3 items-end">
-        {isOwner && (
-          <div className="flex-1">
-            <label className="form-label">Store</label>
-            <select
-              className="form-control"
-              value={selectedStoreId}
-              onChange={(e) => {
-                setSelectedStoreId(e.target.value);
-                localStorage.setItem('selectedStoreId', e.target.value);
-              }}
-            >
-              <option value="">All Stores</option>
-              {stores.map((s) => (
-                <option key={s._id} value={s._id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
         <div className="flex-1">
           <label className="form-label">Start Date</label>
           <input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} />

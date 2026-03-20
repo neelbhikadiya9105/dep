@@ -60,5 +60,13 @@ const authorizeStore = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, authorize, authorizeStore };
+// Middleware that blocks superuser from accessing store-level routes
+const blockSuperuser = (req, res, next) => {
+  if (req.user && req.user.role === 'superuser') {
+    return res.status(403).json({ success: false, message: 'Forbidden: superuser cannot access store-level data' });
+  }
+  next();
+};
+
+module.exports = { protect, authorize, authorizeStore, blockSuperuser };
 

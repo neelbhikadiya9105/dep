@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const Approval = require('../models/Approval');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, blockSuperuser } = require('../middleware/auth');
 
-router.use(protect);
+router.use(protect, blockSuperuser);
 
 // Helper: generate SKU
 function generateSKU() {
@@ -19,7 +19,9 @@ router.get('/lookup', async (req, res) => {
   try {
     const { barcode } = req.query;
     if (!barcode) return res.status(400).json({ message: 'barcode query param required' });
-    const product = await Product.findOne({ barcode }).populate('createdBy', 'name');
+    const filter = { barcode };
+    if (req.user.storeId) filter.storeId = req.user.storeId;
+    const product = await Product.findOne(filter).populate('createdBy', 'name');
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (err) {
@@ -30,7 +32,12 @@ router.get('/lookup', async (req, res) => {
 // GET /api/products
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find().populate('createdBy', 'name');
+    const filter = {};
+    // Scope products to the user's store for data isolation
+    if (req.user.storeId) {
+      filter.storeId = req.user.storeId;
+    }
+    const products = await Product.find(filter).populate('createdBy', 'name');
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -40,7 +47,9 @@ router.get('/', async (req, res) => {
 // POST /api/products
 router.post('/', authorize('owner', 'manager'), async (req, res) => {
   try {
-    const data = { ...req.body, createdBy: req.user.id };
+    // Always inject storeId from the auth token — never trust the request body
+    const storeId = req.user.storeId || null;
+    const data = { ...req.body, createdBy: req.user.id, storeId };
     if (!data.sku) {
       // auto-generate unique SKU
       let sku, exists;
@@ -52,22 +61,15 @@ router.post('/', authorize('owner', 'manager'), async (req, res) => {
     }
     const product = await Product.create(data);
 
-    // Auto-create Inventory record if a storeId is available
-    let targetStoreId = null;
-    if (req.user.role === 'manager' || req.user.role === 'staff') {
-      targetStoreId = req.user.storeId;
-    } else if (req.user.role === 'owner') {
-      // For owners: use provided storeId or their own storeId (already on req.user)
-      targetStoreId = req.body.storeId || req.user.storeId || null;
-    }
-    if (targetStoreId) {
+    // Auto-create Inventory record so product appears immediately in inventory view
+    if (storeId) {
       const Inventory = require('../models/Inventory');
       await Inventory.findOneAndUpdate(
-        { productId: product._id, storeId: targetStoreId },
+        { productId: product._id, storeId },
         {
           $setOnInsert: {
             productId: product._id,
-            storeId: targetStoreId,
+            storeId,
             quantity: req.body.quantity || 0,
             threshold: req.body.threshold || 10,
           },
@@ -85,7 +87,11 @@ router.post('/', authorize('owner', 'manager'), async (req, res) => {
 // PUT /api/products/:id
 router.put('/:id', authorize('owner', 'manager'), async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+    // Ensure storeId cannot be changed via the body
+    const updateData = { ...req.body };
+    delete updateData.storeId;
+
+    const product = await Product.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });
@@ -127,4 +133,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

@@ -1,26 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const Sale = require('../models/Sale');
-const Product = require('../models/Product');
 const Inventory = require('../models/Inventory');
 const User = require('../models/User');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, blockSuperuser } = require('../middleware/auth');
 
-router.use(protect, authorize('owner', 'manager'));
+router.use(protect, authorize('owner', 'manager'), blockSuperuser);
 
 // GET /api/reports/dashboard
 router.get('/dashboard', async (req, res) => {
   try {
-    const { storeId } = req.query;
-    const saleFilter = {};
-    const invFilter = {};
+    // Scope to the user's store — never use query params for storeId (data isolation)
+    const storeId = req.user.storeId;
+    const saleFilter = storeId ? { storeId } : {};
+    const invFilter = storeId ? { storeId } : {};
     const userFilter = { role: { $in: ['manager', 'staff'] }, status: 'approved' };
-
-    if (storeId) {
-      saleFilter.storeId = storeId;
-      invFilter.storeId = storeId;
-      userFilter.storeId = storeId;
-    }
+    if (storeId) userFilter.storeId = storeId;
 
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -54,8 +49,11 @@ router.get('/dashboard', async (req, res) => {
 // GET /api/reports/sales
 router.get('/sales', async (req, res) => {
   try {
-    const { startDate, endDate, paymentMethod, storeId } = req.query;
+    const { startDate, endDate, paymentMethod } = req.query;
     const filter = {};
+
+    // Scope to the user's store — never use query params for storeId (data isolation)
+    if (req.user.storeId) filter.storeId = req.user.storeId;
 
     if (startDate || endDate) {
       filter.createdAt = {};
@@ -70,8 +68,6 @@ router.get('/sales', async (req, res) => {
     if (paymentMethod && paymentMethod !== 'all') {
       filter.paymentMethod = paymentMethod;
     }
-
-    if (storeId) filter.storeId = storeId;
 
     const sales = await Sale.find(filter)
       .populate('employeeId', 'name')

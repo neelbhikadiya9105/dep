@@ -8,7 +8,7 @@ import Card from '../components/ui/Card.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { apiGet, apiPost, apiPut, apiDelete } from '../api/axios.js';
 import useAuthStore from '../store/authStore.js';
-import { fmt } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/currency.js';
 
 const EMPTY_FORM = {
   name: '', category: '', costPrice: '', sellingPrice: '',
@@ -17,12 +17,13 @@ const EMPTY_FORM = {
 
 export default function Inventory() {
   const { user, checkRole } = useAuthStore();
+  const currency = user?.currency || 'INR';
+  const fmt = (v) => formatCurrency(v, currency);
   const isManager = checkRole('owner', 'manager');
   const isOwner = checkRole('owner');
 
   const [inventoryRecords, setInventoryRecords] = useState([]);
-  const [stores, setStores] = useState([]);
-  const [selectedStoreId, setSelectedStoreId] = useState('');
+
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
   const [search, setSearch] = useState('');
@@ -38,21 +39,14 @@ export default function Inventory() {
 
   const loadInventory = useCallback(async () => {
     try {
-      const params = isOwner && selectedStoreId ? { storeId: selectedStoreId } : {};
-      const raw = await apiGet('/inventory', params);
+      const raw = await apiGet('/inventory');
       setInventoryRecords(Array.isArray(raw) ? raw : (raw.data || []));
     } catch (err) {
       showAlert(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
-  }, [isOwner, selectedStoreId]);
-
-  useEffect(() => {
-    if (isOwner) {
-      apiGet('/stores').then((data) => setStores(Array.isArray(data) ? data : (data.data || []))).catch(() => {});
-    }
-  }, [isOwner]);
+  }, []);
 
   useEffect(() => { loadInventory(); }, [loadInventory]);
 
@@ -143,7 +137,7 @@ export default function Inventory() {
       sku: form.sku.trim() || undefined,
       barcode: form.barcode.trim() || undefined,
       barcodeType: 'CODE128',
-      storeId: isOwner ? (selectedStoreId || undefined) : (user?.storeId || undefined),
+      // storeId is injected server-side from the auth token
     };
     try {
       if (editingId) {
@@ -211,16 +205,7 @@ export default function Inventory() {
             <option value="">All Categories</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-          {isOwner && stores.length > 0 && (
-            <select
-              className="form-control w-44"
-              value={selectedStoreId}
-              onChange={(e) => setSelectedStoreId(e.target.value)}
-            >
-              <option value="">All Stores</option>
-              {stores.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
-            </select>
-          )}
+
         </div>
         {isManager && (
           <button onClick={() => openModal()} className="btn btn-primary shrink-0">
