@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   FiGrid, FiPackage, FiShoppingCart, FiRotateCcw,
   FiBarChart2, FiCheckSquare, FiShield, FiMapPin,
-  FiUsers, FiUserCheck, FiActivity,
+  FiUsers, FiUserCheck, FiActivity, FiSettings, FiStar,
 } from 'react-icons/fi';
 import useAuthStore from '../../store/authStore.js';
 
@@ -11,15 +11,17 @@ const NAV_ITEMS = [
   { to: '/inventory', icon: FiPackage,     label: 'Inventory' },
   { to: '/sales',     icon: FiShoppingCart,label: 'Sales / POS' },
   { to: '/returns',   icon: FiRotateCcw,   label: 'Returns' },
-  { to: '/reports',   icon: FiBarChart2,   label: 'Reports', roles: ['owner', 'manager'] },
+  { to: '/reports',   icon: FiBarChart2,   label: 'Reports', roles: ['owner', 'manager', 'superuser'] },
   { to: '/approvals', icon: FiCheckSquare, label: 'Approvals' },
   // Owner + Manager
-  { to: '/stores',       icon: FiMapPin,    label: 'Stores',             roles: ['owner', 'manager'] },
+  { to: '/employees',      icon: FiUsers,     label: 'Employees',      roles: ['owner', 'manager'] },
+  { to: '/user-approvals', icon: FiUserCheck, label: 'User Approvals', roles: ['owner', 'manager'] },
   // Owner-specific
-  { to: '/audit-log',    icon: FiActivity,  label: 'Audit Log',          roles: ['owner'] },
-  // Owner + Manager
-  { to: '/employees',      icon: FiUsers,     label: 'Employees',          roles: ['owner', 'manager'] },
-  { to: '/user-approvals', icon: FiUserCheck, label: 'User Approvals',     roles: ['owner', 'manager'] },
+  { to: '/audit-log',    icon: FiActivity,  label: 'Audit Log',      roles: ['owner'] },
+  // Settings — all users
+  { to: '/settings',     icon: FiSettings,  label: 'Settings' },
+  // Superuser only
+  { to: '/superuser',    icon: FiStar,      label: 'Admin Panel',    roles: ['superuser'] },
 ];
 
 export default function Sidebar() {
@@ -28,6 +30,8 @@ export default function Sidebar() {
   const visibleItems = NAV_ITEMS.filter(
     (item) => !item.roles || (user && item.roles.includes(user.role))
   );
+
+  const displayName = user?.displayName || user?.name || '';
 
   return (
     <aside className="fixed top-0 left-0 h-full w-[250px] bg-slate-800 flex flex-col z-40">
@@ -61,6 +65,21 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* User info */}
+      {user && (
+        <div className="px-4 py-3 border-t border-slate-700">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+              {user.avatar || displayName[0]?.toUpperCase() || 'U'}
+            </div>
+            <div className="overflow-hidden">
+              <div className="text-xs font-semibold text-slate-200 truncate">{displayName}</div>
+              <div className="text-xs text-slate-500 capitalize">{user.role}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="px-4 pb-4">

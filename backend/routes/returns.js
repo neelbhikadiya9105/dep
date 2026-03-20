@@ -6,6 +6,9 @@ const { protect } = require('../middleware/auth');
 
 router.use(protect);
 
+// Reasons that trigger auto-restock
+const RESTOCK_REASONS = ['wrong_item', 'others'];
+
 // POST /api/returns
 router.post('/', async (req, res) => {
   try {
@@ -13,11 +16,18 @@ router.post('/', async (req, res) => {
     if (!saleId || !productId || !quantity || !reason || refundAmount === undefined)
       return res.status(400).json({ message: 'Missing required fields' });
 
-    // Restore stock
+    const validReasons = ['defective', 'wrong_item', 'others'];
+    if (!validReasons.includes(reason))
+      return res.status(400).json({ message: 'Invalid return reason. Must be defective, wrong_item, or others.' });
+
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ message: 'Product not found' });
-    product.quantity += quantity;
-    await product.save();
+
+    // Restock only for wrong_item and others; defective items are not restocked
+    if (RESTOCK_REASONS.includes(reason)) {
+      product.quantity += quantity;
+      await product.save();
+    }
 
     const ret = await Return.create({
       saleId,

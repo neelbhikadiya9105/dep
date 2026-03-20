@@ -1,0 +1,291 @@
+/* =====================================================================
+   Superuser Panel CSS — StockPilot
+   ===================================================================== */
+
+/* ---- Layout ---- */
+.superuser-page {
+  max-width: 1100px;
+}
+
+/* ---- Stats Bar ---- */
+.superuser-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.superuser-stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.superuser-stat-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.superuser-stat-card__icon--yellow { background: #fef9c3; color: #ca8a04; }
+.superuser-stat-card__icon--blue   { background: #dbeafe; color: #2563eb; }
+.superuser-stat-card__icon--green  { background: #d1fae5; color: #059669; }
+.superuser-stat-card__icon--red    { background: #fee2e2; color: #dc2626; }
+
+.superuser-stat-card__value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.superuser-stat-card__label {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ---- Tab Bar ---- */
+.superuser-tabs {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.superuser-tab {
+  flex: 1;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: transparent;
+  color: #64748b;
+}
+
+.superuser-tab--active {
+  background: #fff;
+  color: #4f46e5;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* ---- Card Table ---- */
+.superuser-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.superuser-card__header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.superuser-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* ---- Request Row ---- */
+.superuser-request-row {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.superuser-request-row:last-child {
+  border-bottom: none;
+}
+
+.superuser-request-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.superuser-request-row__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.superuser-request-row__email {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.superuser-request-row__business {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.superuser-request-row__meta {
+  font-size: 11px;
+  color: #cbd5e1;
+  margin-top: 4px;
+}
+
+.superuser-request-row__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ---- Action Buttons ---- */
+.superuser-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.superuser-btn--approve {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.superuser-btn--approve:hover {
+  background: #a7f3d0;
+}
+
+.superuser-btn--reject {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.superuser-btn--reject:hover {
+  background: #fecaca;
+}
+
+.superuser-btn--activate {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.superuser-btn--activate:hover {
+  background: #bfdbfe;
+}
+
+.superuser-btn--deactivate {
+  background: #fef9c3;
+  color: #78350f;
+}
+
+.superuser-btn--deactivate:hover {
+  background: #fde68a;
+}
+
+.superuser-btn--delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.superuser-btn--delete:hover {
+  background: #fecaca;
+}
+
+/* ---- Owner Row ---- */
+.superuser-owner-row {
+  padding: 14px 20px;
+  border-bottom: 1px solid #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.superuser-owner-row:last-child {
+  border-bottom: none;
+}
+
+.superuser-owner-row__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #4f46e5;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.superuser-owner-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.superuser-owner-row__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.superuser-owner-row__email {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.superuser-owner-row__store {
+  font-size: 11px;
+  color: #4f46e5;
+  margin-top: 2px;
+}
+
+/* ---- Status Badge ---- */
+.superuser-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.superuser-status--approved  { background: #d1fae5; color: #065f46; }
+.superuser-status--pending   { background: #fef9c3; color: #78350f; }
+.superuser-status--rejected  { background: #fee2e2; color: #991b1b; }
+.superuser-status--deactivated { background: #f1f5f9; color: #64748b; }
+
+/* ---- Empty State ---- */
+.superuser-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.superuser-empty svg {
+  margin: 0 auto 12px;
+  display: block;
+  opacity: 0.4;
+}

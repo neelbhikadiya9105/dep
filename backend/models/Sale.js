@@ -13,7 +13,7 @@ const saleSchema = new mongoose.Schema({
   totalAmount: { type: Number, required: true },
   subtotal: { type: Number, default: 0 },
   tax: { type: Number, default: 0 },
-  paymentMethod: { type: String, enum: ['cash', 'card'], required: true },
+  paymentMethod: { type: String, enum: ['cash', 'card', 'upi'], required: true },
   employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   customerName: { type: String, default: 'Walk-in' },
   storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store' },

@@ -6,7 +6,7 @@ const returnSchema = new mongoose.Schema({
   quantity: { type: Number, required: true },
   reason: {
     type: String,
-    enum: ['damaged', 'wrong item', 'expired', 'other'],
+    enum: ['defective', 'wrong_item', 'others'],
     required: true
   },
   refundAmount: { type: Number, required: true },

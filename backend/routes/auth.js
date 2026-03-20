@@ -160,6 +160,25 @@ router.post('/forgot', (req, res) => {
   res.json({ success: true, message: 'Password reset email sent (not implemented)' });
 });
 
+// POST /api/auth/access-request — public endpoint to submit a platform access request
+router.post('/access-request', async (req, res) => {
+  try {
+    const { name, email, businessName, message } = req.body;
+    if (!name || !email)
+      return res.status(400).json({ success: false, message: 'Name and email are required' });
+
+    const AccessRequest = require('../models/AccessRequest');
+    const existing = await AccessRequest.findOne({ email: email.toLowerCase(), status: 'pending' });
+    if (existing)
+      return res.status(400).json({ success: false, message: 'A pending request with this email already exists' });
+
+    const request = await AccessRequest.create({ name, email: email.toLowerCase(), businessName, message });
+    res.status(201).json({ success: true, message: 'Access request submitted. You will be contacted when approved.', id: request._id });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;
 
 
