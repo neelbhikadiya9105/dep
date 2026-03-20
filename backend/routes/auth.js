@@ -163,7 +163,7 @@ router.post('/forgot', (req, res) => {
 // POST /api/auth/access-request — public endpoint to submit a platform access request
 router.post('/access-request', async (req, res) => {
   try {
-    const { name, email, businessName, message, password, confirmPassword } = req.body;
+    const { name, email, businessName, message, password, confirmPassword, storeId } = req.body;
     if (!name || !email)
       return res.status(400).json({ success: false, message: 'Name and email are required' });
 
@@ -184,7 +184,10 @@ router.post('/access-request', async (req, res) => {
     // Hash password at submission time — never store plain text
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const request = await AccessRequest.create({ name, email: email.toLowerCase(), businessName, message, passwordHash });
+    const requestData = { name, email: email.toLowerCase(), businessName, message, passwordHash };
+    if (storeId) requestData.storeId = storeId;
+
+    const request = await AccessRequest.create(requestData);
     res.status(201).json({ success: true, message: 'Access request submitted. You will be contacted when approved.', id: request._id });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

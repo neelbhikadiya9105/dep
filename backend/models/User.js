@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema({
   mustChangePassword: { type: Boolean, default: false },
   lastLogin: { type: Date },
   createdAt: { type: Date, default: Date.now },
+  // Superuser role & permissions
+  superuserRole: { type: mongoose.Schema.Types.ObjectId, ref: 'SuperuserRole', default: null },
   // Profile & preferences
   displayName: { type: String, default: '' },
   avatar: { type: String, default: '' },

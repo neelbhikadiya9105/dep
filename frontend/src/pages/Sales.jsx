@@ -12,6 +12,7 @@ import { formatCurrency } from '../utils/currency.js';
 
 export default function Sales() {
   const user = useAuthStore((s) => s.user);
+  const shopBranding = useAuthStore((s) => s.shopBranding);
   const currency = user?.currency || 'INR';
   const fmt = (v) => formatCurrency(v, currency);
 
@@ -192,7 +193,8 @@ export default function Sales() {
 
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('Inventory Avengers', 74, y, { align: 'center' });
+    const shopName = shopBranding?.shopName || shopBranding?.name || 'Inventory Avengers';
+    doc.text(shopName, 74, y, { align: 'center' });
     y += 6;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
@@ -234,7 +236,11 @@ export default function Sales() {
     doc.text(`Total: ${fmt(sale.totalAmount)}`, 138, y, { align: 'right' }); y += 8;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text('Thank you for your purchase!', 74, y, { align: 'center' });
+    const footerMsg = shopBranding?.receiptFooter || 'Thank you for your purchase!';
+    doc.text(footerMsg, 74, y, { align: 'center' }); y += 5;
+    if (shopBranding?.address) { doc.text(shopBranding.address, 74, y, { align: 'center' }); y += 5; }
+    if (shopBranding?.phone) { doc.text(`Tel: ${shopBranding.phone}`, 74, y, { align: 'center' }); y += 4; }
+    if (shopBranding?.email) { doc.text(shopBranding.email, 74, y, { align: 'center' }); }
     doc.save(`receipt-${sale.receiptNumber || sale._id || 'sale'}.pdf`);
   };
 
@@ -459,6 +465,10 @@ export default function Sales() {
           <div className="font-mono text-sm">
             <div className="text-center mb-4">
               <div className="font-bold text-lg">Inventory Avengers</div>
+              {(shopBranding?.shopName || shopBranding?.name) && (
+                <div className="font-bold text-slate-800 text-base">{shopBranding.shopName || shopBranding.name}</div>
+              )}
+              {shopBranding?.address && <div className="text-slate-400 text-xs">{shopBranding.address}</div>}
               <div className="text-slate-500 text-xs">Receipt #{lastSale.receiptNumber || lastSale._id}</div>
               <div className="text-slate-500 text-xs">{new Date(lastSale.createdAt || Date.now()).toLocaleString()}</div>
             </div>
@@ -493,6 +503,9 @@ export default function Sales() {
             </div>
             <div className="text-center text-xs text-slate-400 mt-4">Thank you for your purchase!</div>
             <div className="flex gap-2 mt-4">
+              {shopBranding?.receiptFooter && (
+                <div className="text-center text-xs text-slate-400 mt-2 italic">{shopBranding.receiptFooter}</div>
+              )}
               <button onClick={downloadReceiptPDF} className="btn btn-primary w-full justify-center">
                 Download PDF
               </button>

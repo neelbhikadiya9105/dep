@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FiLogOut, FiSettings, FiChevronDown } from 'react-icons/fi';
+import { FiLogOut, FiSettings, FiChevronDown, FiMessageSquare } from 'react-icons/fi';
 import { RoleBadge } from '../ui/Badge.jsx';
 import NotificationDropdown from '../NotificationDropdown.jsx';
 import useAuthStore from '../../store/authStore.js';
@@ -11,19 +11,19 @@ const PAGE_TITLES = {
   '/sales':     'Sales / POS',
   '/returns':   'Returns',
   '/reports':   'Reports',
-  '/approvals': 'Approvals',
   '/stores':    'Stores',
   '/employees': 'Employee Management',
   '/user-approvals': 'User Approvals',
   '/audit-log': 'Audit Log',
   '/settings':  'Settings',
   '/superuser': 'Admin Panel',
+  '/support':   'Support Messages',
 };
 
 export default function Topbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, logout, shopBranding } = useAuthStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -51,10 +51,16 @@ export default function Topbar() {
   const title = PAGE_TITLES[pathKey] || 'Dashboard';
 
   const displayName = user?.displayName || user?.name || '';
+  const shopName = shopBranding?.shopName || shopBranding?.name || '';
 
   return (
     <header className="fixed top-0 left-[250px] right-0 h-[60px] bg-white border-b border-slate-100 flex items-center justify-between px-6 z-30">
-      <h1 className="text-base font-semibold text-slate-800">{title}</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-base font-semibold text-slate-800">{title}</h1>
+        {shopName && user?.role !== 'superuser' && (
+          <span className="text-xs text-slate-400 hidden sm:inline">— {shopName}</span>
+        )}
+      </div>
 
       <div className="flex items-center gap-3">
         {user && <RoleBadge role={user.role} />}
@@ -90,6 +96,17 @@ export default function Topbar() {
                 <FiSettings size={14} />
                 Settings
               </Link>
+              {/* Help / Support link (non-superuser) */}
+              {user?.role !== 'superuser' && (
+                <Link
+                  to="/support"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-all"
+                >
+                  <FiMessageSquare size={14} />
+                  Help / Support
+                </Link>
+              )}
               {/* Logout */}
               <button
                 onClick={handleLogout}
