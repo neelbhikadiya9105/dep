@@ -47,6 +47,8 @@ app.use('/api/audit-logs', require('./routes/auditLogs'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/superuser', require('./routes/superuser'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/billing', require('./routes/billing'));
+app.use('/api/messages', require('./routes/messages'));
 
 // Serve frontend: production build (dist/) takes precedence; fall back to source
 const distPath = path.join(__dirname, '../frontend/dist');

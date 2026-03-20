@@ -9,8 +9,23 @@ const storeSchema = new mongoose.Schema(
     email: { type: String, default: '' },
     managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    status: {
+      type: String,
+      enum: ['active', 'inactive', 'trial', 'expired', 'suspended', 'banned'],
+      default: 'trial'
+    },
     isActive: { type: Boolean, default: true },
+    // Subscription & billing
+    plan: { type: String, enum: ['free', 'basic', 'pro'], default: 'free' },
+    trialExpiresAt: { type: Date, default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) },
+    subscriptionExpiresAt: { type: Date, default: null },
+    // Usage stats (aggregated from sales/products)
+    usageStats: {
+      totalOrders: { type: Number, default: 0 },
+      totalProducts: { type: Number, default: 0 },
+      revenue: { type: Number, default: 0 },
+      apiCalls: { type: Number, default: 0 },
+    },
     createdAt: { type: Date, default: Date.now }
   }
 );

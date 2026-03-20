@@ -40,7 +40,7 @@ const STEPS = [
 const PREVIEW_BARS = [40, 65, 45, 80, 55, 90, 70, 95, 60, 75, 85, 50];
 
 export default function Landing() {
-  const [form, setForm] = useState({ name: '', email: '', businessName: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', businessName: '', message: '', password: '', confirmPassword: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -49,8 +49,16 @@ export default function Landing() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
     setError('');
+
+    if (!form.password) { setError('Password is required.'); return; }
+    if (form.password.length < 8 || !/\d/.test(form.password)) {
+      setError('Password must be at least 8 characters and contain at least one number.');
+      return;
+    }
+    if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
+
+    setSubmitting(true);
     try {
       await apiPost('/auth/access-request', form);
       setSubmitted(true);
@@ -279,6 +287,14 @@ export default function Landing() {
                   <div className="landing-form-group">
                     <label>Message (optional)</label>
                     <textarea name="message" value={form.message} onChange={handleChange} placeholder="Tell us more about your needs..." />
+                  </div>
+                  <div className="landing-form-group">
+                    <label>Password *</label>
+                    <input name="password" type="password" value={form.password} onChange={handleChange} required placeholder="Min. 8 characters with at least one number" />
+                  </div>
+                  <div className="landing-form-group">
+                    <label>Confirm Password *</label>
+                    <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} required placeholder="Re-enter your password" />
                   </div>
                   <button type="submit" disabled={submitting} className="landing-btn landing-btn--primary" style={{ width: '100%', justifyContent: 'center', marginTop: '8px' }}>
                     {submitting ? 'Submitting...' : 'Submit Request'}

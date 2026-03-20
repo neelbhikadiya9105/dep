@@ -163,16 +163,28 @@ router.post('/forgot', (req, res) => {
 // POST /api/auth/access-request — public endpoint to submit a platform access request
 router.post('/access-request', async (req, res) => {
   try {
-    const { name, email, businessName, message } = req.body;
+    const { name, email, businessName, message, password, confirmPassword } = req.body;
     if (!name || !email)
       return res.status(400).json({ success: false, message: 'Name and email are required' });
+
+    if (!password)
+      return res.status(400).json({ success: false, message: 'Password is required' });
+
+    if (password.length < 8 || !/\d/.test(password))
+      return res.status(400).json({ success: false, message: 'Password must be at least 8 characters and contain at least one number' });
+
+    if (password !== confirmPassword)
+      return res.status(400).json({ success: false, message: 'Passwords do not match' });
 
     const AccessRequest = require('../models/AccessRequest');
     const existing = await AccessRequest.findOne({ email: email.toLowerCase(), status: 'pending' });
     if (existing)
       return res.status(400).json({ success: false, message: 'A pending request with this email already exists' });
 
-    const request = await AccessRequest.create({ name, email: email.toLowerCase(), businessName, message });
+    // Hash password at submission time — never store plain text
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const request = await AccessRequest.create({ name, email: email.toLowerCase(), businessName, message, passwordHash });
     res.status(201).json({ success: true, message: 'Access request submitted. You will be contacted when approved.', id: request._id });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
