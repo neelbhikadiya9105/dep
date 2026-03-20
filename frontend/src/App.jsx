@@ -34,204 +34,23 @@ export default function App() {
         <Route path="/approvals" element={<Navigate to="/employees" replace />} />
 
         {/* Protected — any authenticated user */}
-        <Route
-          path="/dashboard"
-          element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
-        />
-        <Route
-          path="/inventory"
-          element={<ProtectedRoute><Inventory /></ProtectedRoute>}
-        />
-        <Route
-          path="/sales"
-          element={<ProtectedRoute><Sales /></ProtectedRoute>}
-        />
-        <Route
-          path="/returns"
-          element={<ProtectedRoute><Returns /></ProtectedRoute>}
-        />
-        <Route
-          path="/reports"
-          element={
-            <RoleRoute roles={['owner', 'manager', 'superuser']}>
-              <Reports />
-            </RoleRoute>
-          }
-        />
-
-        {/* Settings — all authenticated users */}
-        <Route
-          path="/settings"
-          element={<ProtectedRoute><Settings /></ProtectedRoute>}
-        />
-
-        {/* Support Messages — all authenticated non-superuser users */}
-        <Route
-          path="/support"
-          element={<ProtectedRoute><SupportMessages /></ProtectedRoute>}
-        />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+        <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+        <Route path="/returns" element={<ProtectedRoute><Returns /></ProtectedRoute>} />
+        <Route path="/reports" element={<RoleRoute roles={['owner', 'manager', 'superuser']}><Reports /></RoleRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/support" element={<ProtectedRoute><SupportMessages /></ProtectedRoute>} />
 
         {/* Superuser Panel */}
-        <Route
-          path="/superuser"
-          element={
-            <RoleRoute roles={['superuser']}>
-              <SuperuserPanel />
-            </RoleRoute>
-          }
-        />
-
-        {/* Owner + Manager — Stores */}
-        <Route
-          path="/stores"
-          element={
-            <RoleRoute roles={['owner', 'manager']}>
-              <Stores />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/audit-log"
-          element={
-            <RoleRoute roles={['owner']}>
-              <AuditLog />
-            </RoleRoute>
-          }
-        />
+        <Route path="/superuser" element={<RoleRoute roles={['superuser']}><SuperuserPanel /></RoleRoute>} />
 
         {/* Owner + Manager */}
-        <Route
-          path="/employees"
-          element={
-            <RoleRoute roles={['owner', 'manager']}>
-              <EmployeeManagement />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/employees/:id"
-          element={
-            <RoleRoute roles={['owner', 'manager']}>
-              <EmployeeProfile />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/user-approvals"
-          element={
-            <RoleRoute roles={['owner', 'manager']}>
-              <UserApprovals />
-            </RoleRoute>
-          }
-        />
-
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public */}
-        <Route path="/landing" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forbidden" element={<ForbiddenPage />} />
-        <Route path="/" element={<Navigate to="/landing" replace />} />
-
-        {/* Protected — any authenticated user */}
-        <Route
-          path="/dashboard"
-          element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
-        />
-        <Route
-          path="/inventory"
-          element={<ProtectedRoute><Inventory /></ProtectedRoute>}
-        />
-        <Route
-          path="/sales"
-          element={<ProtectedRoute><Sales /></ProtectedRoute>}
-        />
-        <Route
-          path="/returns"
-          element={<ProtectedRoute><Returns /></ProtectedRoute>}
-        />
-        <Route
-          path="/reports"
-          element={
-            <RoleRoute roles={['owner', 'manager', 'superuser']}>
-              <Reports />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/approvals"
-          element={<ProtectedRoute><Approvals /></ProtectedRoute>}
-        />
-
-        {/* Settings — all authenticated users */}
-        <Route
-          path="/settings"
-          element={<ProtectedRoute><Settings /></ProtectedRoute>}
-        />
-
-        {/* Superuser Panel */}
-        <Route
-          path="/superuser"
-          element={
-            <RoleRoute roles={['superuser']}>
-              <SuperuserPanel />
-            </RoleRoute>
-          }
-        />
-
-        {/* Owner + Manager — Stores */}
-        <Route
-          path="/stores"
-          element={
-            <RoleRoute roles={['owner', 'manager']}>
-              <Stores />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/audit-log"
-          element={
-            <RoleRoute roles={['owner']}>
-              <AuditLog />
-            </RoleRoute>
-          }
-        />
-
-        {/* Owner + Manager */}
-        <Route
-          path="/employees"
-          element={
-            <RoleRoute roles={['owner', 'manager']}>
-              <EmployeeManagement />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/employees/:id"
-          element={
-            <RoleRoute roles={['owner', 'manager']}>
-              <EmployeeProfile />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/user-approvals"
-          element={
-            <RoleRoute roles={['owner', 'manager']}>
-              <UserApprovals />
-            </RoleRoute>
-          }
-        />
+        <Route path="/stores" element={<RoleRoute roles={['owner', 'manager']}><Stores /></RoleRoute>} />
+        <Route path="/audit-log" element={<RoleRoute roles={['owner']}><AuditLog /></RoleRoute>} />
+        <Route path="/employees" element={<RoleRoute roles={['owner', 'manager']}><EmployeeManagement /></RoleRoute>} />
+        <Route path="/employees/:id" element={<RoleRoute roles={['owner', 'manager']}><EmployeeProfile /></RoleRoute>} />
+        <Route path="/user-approvals" element={<RoleRoute roles={['owner', 'manager']}><UserApprovals /></RoleRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiUser, FiSettings, FiLogOut, FiSave, FiMoon, FiSun } from 'react-icons/fi';
+import { FiUser, FiSettings, FiLogOut, FiSave, FiMoon, FiSun, FiShoppingBag } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import Alert from '../components/ui/Alert.jsx';
@@ -18,7 +18,10 @@ const CURRENCIES = [
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { user: authUser, logout, setAuth, theme, setTheme } = useAuthStore();
+  const { user: authUser, logout, setAuth, theme, setTheme, shopBranding, setShopBranding } = useAuthStore();
+
+  const [branding, setBranding] = useState({ shopName: '', logoUrl: '', address: '', phone: '', email: '', receiptFooter: '' });
+  const [brandingSaving, setBrandingSaving] = useState(false);
 
   const [profile, setProfile] = useState({
     name: '',
@@ -57,6 +60,34 @@ export default function Settings() {
       }
     })();
   }, [authUser]);
+
+  useEffect(() => {
+    if (shopBranding) {
+      setBranding({
+        shopName: shopBranding.shopName || '',
+        logoUrl: shopBranding.logoUrl || '',
+        address: shopBranding.address || '',
+        phone: shopBranding.phone || '',
+        email: shopBranding.email || '',
+        receiptFooter: shopBranding.receiptFooter || '',
+      });
+    }
+  }, [shopBranding]);
+
+  const handleSaveBranding = async () => {
+    if (!authUser?.storeId) return;
+    setBrandingSaving(true);
+    try {
+      const res = await apiPut(`/stores/${authUser.storeId}/branding`, branding);
+      const updated = res.data || res;
+      showAlert('Shop branding saved.', 'success');
+      if (setShopBranding) setShopBranding(updated);
+    } catch (err) {
+      showAlert(err.response?.data?.message || 'Failed to save branding.');
+    } finally {
+      setBrandingSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -174,6 +205,51 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
+
+        {/* ── Shop Branding (owner only) ── */}
+        {authUser?.role === 'owner' && (
+          <div className="settings-section">
+            <div className="settings-section__header">
+              <div className="settings-section__icon"><FiShoppingBag size={16} /></div>
+              <div className="settings-section__title">Shop Branding</div>
+            </div>
+            <div className="settings-section__body">
+              <div className="settings-form-row">
+                <label>Shop Name</label>
+                <input type="text" value={branding.shopName} onChange={(e) => setBranding({ ...branding, shopName: e.target.value })} placeholder="Your shop name" maxLength={80} />
+                <div className="settings-form-row__hint">Appears in the topbar and sidebar header.</div>
+              </div>
+              <div className="settings-form-row">
+                <label>Logo URL (optional)</label>
+                <input type="url" value={branding.logoUrl} onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })} placeholder="https://..." />
+                <div className="settings-form-row__hint">Public image URL for your shop logo.</div>
+              </div>
+              <div className="settings-form-row">
+                <label>Address</label>
+                <input type="text" value={branding.address} onChange={(e) => setBranding({ ...branding, address: e.target.value })} placeholder="123 Main Street, City" />
+              </div>
+              <div className="settings-form-row">
+                <label>Phone</label>
+                <input type="text" value={branding.phone} onChange={(e) => setBranding({ ...branding, phone: e.target.value })} placeholder="+91 99999 99999" />
+              </div>
+              <div className="settings-form-row">
+                <label>Email</label>
+                <input type="email" value={branding.email} onChange={(e) => setBranding({ ...branding, email: e.target.value })} placeholder="shop@example.com" />
+              </div>
+              <div className="settings-form-row">
+                <label>Receipt Footer Message</label>
+                <textarea value={branding.receiptFooter} onChange={(e) => setBranding({ ...branding, receiptFooter: e.target.value })} placeholder="Thank you for shopping with us!" rows={2} style={{ resize: 'vertical' }} />
+              </div>
+              <div className="settings-actions">
+                <button className="btn btn-primary" onClick={handleSaveBranding} disabled={brandingSaving || loading}>
+                  <FiSave size={14} />
+                  {brandingSaving ? 'Saving...' : 'Save Branding'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── System Preferences ── */}
         <div className="settings-section">

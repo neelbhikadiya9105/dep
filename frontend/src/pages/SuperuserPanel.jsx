@@ -649,6 +649,110 @@ function CommunicationsTab({ owners, showAlert }) {
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab: Support Inbox
+// ─────────────────────────────────────────────────────────────────────────────
+function InboxTab({ showAlert }) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [replyOpen, setReplyOpen] = useState(null);
+  const [replyBody, setReplyBody] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const load = () => {
+    apiGet('/superuser/support-inbox')
+      .then((res) => setMessages(res.data || []))
+      .catch(() => setMessages([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const markRead = (id) => {
+    apiPatch(`/messages/${id}/read`).catch(() => {});
+    setMessages((prev) => prev.map((m) => m._id === id ? { ...m, read: true } : m));
+  };
+
+  const handleReply = async (e) => {
+    e.preventDefault();
+    if (!replyBody.trim()) return;
+    setSending(true);
+    try {
+      await apiPost('/messages', {
+        toId: replyOpen.fromId?._id || replyOpen.fromId,
+        subject: `Re: ${replyOpen.subject}`,
+        body: replyBody,
+        parentMessageId: replyOpen._id,
+      });
+      showAlert('Reply sent.', 'success');
+      setReplyOpen(null);
+      setReplyBody('');
+      load();
+    } catch (err) { showAlert(err.response?.data?.message || err.message); }
+    finally { setSending(false); }
+  };
+
+  if (loading) return <LoadingSpinner text="Loading inbox..." />;
+  if (!messages.length) return <div className="superuser-empty">No support messages yet.</div>;
+
+  return (
+    <div className="superuser-card">
+      <div className="superuser-card__header"><div className="superuser-card__title">Support Inbox</div></div>
+      <div style={{ padding: '0 0 8px' }}>
+        {messages.map((msg) => (
+          <div
+            key={msg._id}
+            className="superuser-request-row"
+            style={{ cursor: 'pointer', borderLeft: !msg.read ? '3px solid #4F8ECC' : '3px solid transparent', paddingLeft: 12 }}
+            onClick={() => markRead(msg._id)}
+          >
+            <div className="superuser-request-row__info" style={{ flex: 1 }}>
+              <div className="superuser-request-row__name" style={{ fontWeight: !msg.read ? 700 : 500 }}>
+                {!msg.read && <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#4F8ECC', marginRight: 6, verticalAlign: 'middle' }} />}
+                {msg.subject}
+              </div>
+              <div className="superuser-request-row__email">
+                From: {msg.fromId?.name || '—'} · {msg.storeId?.name || msg.storeId || '—'} · {fmtDate(msg.sentAt)}
+              </div>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{msg.body}</div>
+            </div>
+            <button
+              className="superuser-btn superuser-btn--approve"
+              style={{ alignSelf: 'flex-start', marginLeft: 12 }}
+              onClick={(e) => { e.stopPropagation(); setReplyOpen(msg); setReplyBody(''); }}
+            >
+              <FiSend size={12} /> Reply
+            </button>
+          </div>
+        ))}
+      </div>
+      {replyOpen && (
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>Replying to: {replyOpen.subject}</div>
+          <form onSubmit={handleReply} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <textarea
+              className="su-input"
+              rows={4}
+              placeholder="Your reply..."
+              value={replyBody}
+              onChange={(e) => setReplyBody(e.target.value)}
+              required
+              style={{ resize: 'vertical' }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" disabled={sending} className="superuser-btn superuser-btn--approve">
+                <FiSend size={12} /> {sending ? 'Sending...' : 'Send Reply'}
+              </button>
+              <button type="button" className="superuser-btn" onClick={() => setReplyOpen(null)}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -694,6 +798,7 @@ export default function SuperuserPanel() {
     { key: 'billing', label: '💳 Billing', icon: <FiTag /> },
     { key: 'logs', label: '📋 Logs', icon: <FiFileText /> },
     { key: 'comms', label: '💬 Communications', icon: <FiMessageSquare /> },
+    { key: 'inbox', label: '📩 Support Inbox', icon: <FiMessageSquare /> },
   ];
 
   return (
@@ -726,7 +831,7 @@ export default function SuperuserPanel() {
           ))}
         </div>
 
-        {loading && tab !== 'billing' && tab !== 'logs' && tab !== 'comms' ? (
+        {loading && tab !== 'billing' && tab !== 'logs' && tab !== 'comms' && tab !== 'inbox' ? (
           <LoadingSpinner text="Loading panel data..." />
         ) : (
           <>
@@ -735,6 +840,7 @@ export default function SuperuserPanel() {
             {tab === 'billing' && <BillingTab showAlert={showAlert} />}
             {tab === 'logs' && <LogsTab />}
             {tab === 'comms' && <CommunicationsTab owners={owners} showAlert={showAlert} />}
+            {tab === 'inbox' && <InboxTab showAlert={showAlert} />}
           </>
         )}
       </div>
