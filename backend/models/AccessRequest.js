@@ -15,6 +15,7 @@ const accessRequestSchema = new mongoose.Schema({
   reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   reviewedAt: { type: Date },
   createdOwner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', default: null },
   createdAt: { type: Date, default: Date.now }
 });
 

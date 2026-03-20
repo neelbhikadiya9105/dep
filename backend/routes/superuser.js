@@ -10,6 +10,7 @@ const ActivityLog = require('../models/ActivityLog');
 const Message = require('../models/Message');
 const Sale = require('../models/Sale');
 const Product = require('../models/Product');
+const SuperuserRole = require('../models/SuperuserRole');
 const { protect, authorize } = require('../middleware/auth');
 const { logActivity } = require('../middleware/logger');
 const { sendEmail, shopSuspendedEmail } = require('../services/email');
@@ -43,12 +44,20 @@ router.post('/access-requests/:id/approve', async (req, res) => {
     if (existing)
       return res.status(400).json({ success: false, message: 'A user with this email already exists' });
 
-    const store = await Store.create({
-      name: request.businessName || `${request.name}'s Store`,
-      code: `STR-${Date.now().toString(36).toUpperCase()}`,
-      status: 'trial',
-      trialExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-    });
+    // If the access request has a storeId, assign user to that store; otherwise create a new store
+    let store;
+    if (request.storeId) {
+      store = await Store.findById(request.storeId);
+      if (!store)
+        return res.status(404).json({ success: false, message: 'Selected store not found' });
+    } else {
+      store = await Store.create({
+        name: request.businessName || `${request.name}'s Store`,
+        code: `STR-${Date.now().toString(36).toUpperCase()}`,
+        status: 'trial',
+        trialExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      });
+    }
 
     // Use owner-chosen password hash if available; else generate a temp password
     let passwordValue;
@@ -621,6 +630,106 @@ router.get('/messages/sent', async (req, res) => {
       .populate('toId', 'name email')
       .sort({ sentAt: -1 })
       .limit(100);
+    res.json({ success: true, data: messages });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUPERUSER ROLE MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+// GET /api/superuser/roles
+router.get('/roles', async (req, res) => {
+  try {
+    const roles = await SuperuserRole.find().sort({ roleName: 1 });
+    res.json({ success: true, data: roles });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/superuser/roles
+router.post('/roles', async (req, res) => {
+  try {
+    const { roleName, permissions } = req.body;
+    if (!roleName) return res.status(400).json({ success: false, message: 'roleName is required' });
+    const role = await SuperuserRole.create({ roleName, permissions: permissions || [] });
+    res.status(201).json({ success: true, data: role });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/superuser/roles/:id
+router.put('/roles/:id', async (req, res) => {
+  try {
+    const { roleName, permissions } = req.body;
+    const role = await SuperuserRole.findByIdAndUpdate(
+      req.params.id,
+      { ...(roleName && { roleName }), ...(permissions && { permissions }) },
+      { new: true, runValidators: true }
+    );
+    if (!role) return res.status(404).json({ success: false, message: 'Role not found' });
+    res.json({ success: true, data: role });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE /api/superuser/roles/:id
+router.delete('/roles/:id', async (req, res) => {
+  try {
+    const role = await SuperuserRole.findByIdAndDelete(req.params.id);
+    if (!role) return res.status(404).json({ success: false, message: 'Role not found' });
+    // Clear role from all users that had it
+    await User.updateMany({ superuserRole: req.params.id }, { superuserRole: null });
+    res.json({ success: true, message: 'Role deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// PUT /api/superuser/users/:id/superuser-role — assign a superuser role to a user
+router.put('/users/:id/superuser-role', async (req, res) => {
+  try {
+    const { superuserRoleId } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (user.role !== 'superuser') return res.status(400).json({ success: false, message: 'User is not a superuser' });
+    user.superuserRole = superuserRoleId || null;
+    await user.save();
+    const populated = await User.findById(user._id).populate('superuserRole');
+    res.json({ success: true, data: populated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/superuser/my-permissions — current superuser's permissions
+router.get('/my-permissions', async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('superuserRole');
+    const permissions = user?.superuserRole?.permissions || null; // null = no role = all allowed
+    res.json({ success: true, data: { permissions } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUPPORT INBOX (messages from owners/staff to superuser)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// GET /api/superuser/support-inbox
+router.get('/support-inbox', async (req, res) => {
+  try {
+    const messages = await Message.find({ toRole: 'superuser', parentMessageId: null })
+      .populate('fromId', 'name email role storeId')
+      .populate({ path: 'fromId', populate: { path: 'storeId', select: 'name' } })
+      .sort({ sentAt: -1 })
+      .limit(200);
     res.json({ success: true, data: messages });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

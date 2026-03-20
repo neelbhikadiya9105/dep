@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../css/landing.css';
-import { apiPost } from '../api/axios.js';
+import { apiPost, apiGet } from '../api/axios.js';
 
 const FEATURES = [
   {
@@ -40,10 +40,21 @@ const STEPS = [
 const PREVIEW_BARS = [40, 65, 45, 80, 55, 90, 70, 95, 60, 75, 85, 50];
 
 export default function Landing() {
-  const [form, setForm] = useState({ name: '', email: '', businessName: '', message: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', businessName: '', message: '', password: '', confirmPassword: '', storeId: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [stores, setStores] = useState([]);
+
+  // Fetch available stores for the selection dropdown
+  useEffect(() => {
+    apiGet('/stores')
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : (data.data || []);
+        setStores(arr.filter((s) => s.status !== 'banned' && s.status !== 'inactive'));
+      })
+      .catch(() => { /* non-critical */ });
+  }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -284,6 +295,17 @@ export default function Landing() {
                     <label>Business Name</label>
                     <input name="businessName" value={form.businessName} onChange={handleChange} placeholder="Your business or store name" />
                   </div>
+                  {stores.length > 0 && (
+                    <div className="landing-form-group">
+                      <label>Select Store (optional)</label>
+                      <select name="storeId" value={form.storeId} onChange={handleChange}>
+                        <option value="">— Create a new store —</option>
+                        {stores.map((s) => (
+                          <option key={s._id} value={s._id}>{s.shopName || s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="landing-form-group">
                     <label>Message (optional)</label>
                     <textarea name="message" value={form.message} onChange={handleChange} placeholder="Tell us more about your needs..." />

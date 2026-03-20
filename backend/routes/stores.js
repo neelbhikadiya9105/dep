@@ -179,4 +179,32 @@ router.get('/:id/stats', authorize('owner', 'manager'), async (req, res) => {
   }
 });
 
+// PUT /api/stores/:id/branding — owner updates shop branding
+router.put('/:id/branding', authorize('owner'), async (req, res) => {
+  try {
+    const { shopName, logoUrl, address, phone, email, receiptFooter } = req.body;
+    const update = {};
+    if (shopName !== undefined) update.shopName = shopName;
+    if (logoUrl !== undefined) update.logoUrl = logoUrl;
+    if (address !== undefined) update.address = address;
+    if (phone !== undefined) update.phone = phone;
+    if (email !== undefined) update.email = email;
+    if (receiptFooter !== undefined) update.receiptFooter = receiptFooter;
+
+    const store = await Store.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true,
+    });
+    if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
+    await AuditLog.create({
+      actorId: req.user.id,
+      action: 'update_store_branding',
+      metadata: { storeId: store._id, name: store.name }
+    });
+    res.json({ success: true, data: store });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

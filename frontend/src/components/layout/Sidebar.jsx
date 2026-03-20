@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   FiGrid, FiPackage, FiShoppingCart, FiRotateCcw,
-  FiBarChart2, FiCheckSquare, FiShield, FiMapPin,
+  FiBarChart2, FiShield, FiMapPin,
   FiUsers, FiUserCheck, FiActivity, FiStar,
 } from 'react-icons/fi';
 import useAuthStore from '../../store/authStore.js';
@@ -12,7 +12,6 @@ const NAV_ITEMS = [
   { to: '/sales',     icon: FiShoppingCart,label: 'Sales / POS' },
   { to: '/returns',   icon: FiRotateCcw,   label: 'Returns' },
   { to: '/reports',   icon: FiBarChart2,   label: 'Reports', roles: ['owner', 'manager', 'superuser'] },
-  { to: '/approvals', icon: FiCheckSquare, label: 'Approvals' },
   // Owner + Manager
   { to: '/employees',      icon: FiUsers,     label: 'Employees',      roles: ['owner', 'manager'] },
   { to: '/user-approvals', icon: FiUserCheck, label: 'User Approvals', roles: ['owner', 'manager'] },
@@ -24,23 +23,34 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const user = useAuthStore((s) => s.user);
+  const shopBranding = useAuthStore((s) => s.shopBranding);
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => !item.roles || (user && item.roles.includes(user.role))
   );
 
   const displayName = user?.displayName || user?.name || '';
+  const shopName = shopBranding?.shopName || shopBranding?.name || '';
+  const shopLogo = shopBranding?.logoUrl || '';
 
   return (
     <aside className="fixed top-0 left-0 h-full w-[250px] bg-slate-800 flex flex-col z-40">
-      {/* Logo */}
+      {/* Logo / Shop Branding */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-700">
-        <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-          <FiShield className="text-white" size={18} />
-        </div>
+        {shopLogo ? (
+          <img src={shopLogo} alt="Shop logo" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+        ) : (
+          <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+            <FiShield className="text-white" size={18} />
+          </div>
+        )}
         <div>
-          <div className="text-white font-semibold text-sm leading-tight">Inventory</div>
-          <div className="text-indigo-300 text-xs font-medium">Avengers</div>
+          <div className="text-white font-semibold text-sm leading-tight">
+            {shopName || 'Inventory'}
+          </div>
+          <div className="text-indigo-300 text-xs font-medium">
+            {shopName ? 'StockPilot' : 'Avengers'}
+          </div>
         </div>
       </div>
 

@@ -27,6 +27,10 @@ const storeSchema = new mongoose.Schema(
       revenue: { type: Number, default: 0 },
       apiCalls: { type: Number, default: 0 },
     },
+    // Branding / personalisation
+    shopName: { type: String, default: '' },
+    logoUrl: { type: String, default: '' },
+    receiptFooter: { type: String, default: '' },
     createdAt: { type: Date, default: Date.now }
   }
 );

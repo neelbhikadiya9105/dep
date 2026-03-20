@@ -18,6 +18,14 @@ const getStoredFeatureFlags = () => {
     return null;
   }
 };
+const getStoredShopBranding = () => {
+  try {
+    const b = localStorage.getItem('shopBranding');
+    return b ? JSON.parse(b) : null;
+  } catch {
+    return null;
+  }
+};
 
 const getStoredTheme = () => localStorage.getItem('theme') || 'light';
 
@@ -27,6 +35,7 @@ const useAuthStore = create((set, get) => ({
   isAuthenticated: !!getStoredToken(),
   theme: getStoredTheme(),
   featureFlags: getStoredFeatureFlags(),
+  shopBranding: getStoredShopBranding(),
   // true once feature flags have been fetched (or confirmed absent) for the current session
   featureFlagsLoaded: !!getStoredFeatureFlags(),
 
@@ -36,7 +45,7 @@ const useAuthStore = create((set, get) => ({
     localStorage.setItem('user', JSON.stringify(data.user));
     set({ token: data.token, user: data.user, isAuthenticated: true });
 
-    // Fetch feature flags for this store (non-blocking)
+    // Fetch feature flags and shop branding for this store (non-blocking)
     if (data.user?.storeId) {
       apiGet(`/superuser/feature-flags/${data.user.storeId}`)
         .then((res) => {
@@ -48,6 +57,18 @@ const useAuthStore = create((set, get) => ({
           // Could not load flags — mark as loaded with no flags; routes will deny access properly
           set({ featureFlagsLoaded: true });
         });
+
+      // Fetch shop branding
+      apiGet('/stores')
+        .then((stores) => {
+          const arr = Array.isArray(stores) ? stores : (stores.data || []);
+          const store = arr.find((s) => String(s._id) === String(data.user.storeId)) || arr[0] || null;
+          if (store) {
+            localStorage.setItem('shopBranding', JSON.stringify(store));
+            set({ shopBranding: store });
+          }
+        })
+        .catch(() => {});
     } else {
       set({ featureFlagsLoaded: true });
     }
@@ -64,13 +85,19 @@ const useAuthStore = create((set, get) => ({
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('featureFlags');
-    set({ token: null, user: null, isAuthenticated: false, featureFlags: null, featureFlagsLoaded: false });
+    localStorage.removeItem('shopBranding');
+    set({ token: null, user: null, isAuthenticated: false, featureFlags: null, featureFlagsLoaded: false, shopBranding: null });
   },
 
   setAuth: (token, user) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     set({ token, user, isAuthenticated: true });
+  },
+
+  setShopBranding: (branding) => {
+    localStorage.setItem('shopBranding', JSON.stringify(branding));
+    set({ shopBranding: branding });
   },
 
   checkRole: (...roles) => {
