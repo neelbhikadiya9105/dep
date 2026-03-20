@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Return = require('../models/Return');
-const Product = require('../models/Product');
-const { protect } = require('../middleware/auth');
+const Inventory = require('../models/Inventory');
+const { protect, blockSuperuser } = require('../middleware/auth');
 
-router.use(protect);
+router.use(protect, blockSuperuser);
 
 // Reasons that trigger auto-restock
 const RESTOCK_REASONS = ['wrong_item', 'others'];
@@ -20,26 +20,41 @@ router.post('/', async (req, res) => {
     if (!validReasons.includes(reason))
       return res.status(400).json({ message: 'Invalid return reason. Must be defective, wrong_item, or others.' });
 
-    const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    // Check for duplicate return (same item from same sale)
+    const existingReturn = await Return.findOne({ saleId, productId });
+    if (existingReturn) {
+      return res.status(400).json({ message: 'This item has already been returned.' });
+    }
+
+    // Inject storeId from auth token for data isolation
+    const storeId = req.user.storeId || null;
 
     // Restock only for wrong_item and others; defective items are not restocked
-    if (RESTOCK_REASONS.includes(reason)) {
-      product.quantity += quantity;
-      await product.save();
+    if (RESTOCK_REASONS.includes(reason) && storeId) {
+      const inv = await Inventory.findOne({ productId, storeId });
+      if (inv) {
+        inv.quantity += quantity;
+        inv.updatedAt = new Date();
+        await inv.save();
+      }
     }
 
     const ret = await Return.create({
       saleId,
       productId,
+      storeId,
       quantity,
       reason,
       refundAmount,
-      processedBy: req.user.id
+      processedBy: req.user.id,
     });
 
     res.status(201).json(ret);
   } catch (err) {
+    // Handle MongoDB duplicate key error (unique index) as a fallback
+    if (err.code === 11000) {
+      return res.status(400).json({ message: 'This item has already been returned.' });
+    }
     res.status(500).json({ message: err.message });
   }
 });
@@ -47,7 +62,10 @@ router.post('/', async (req, res) => {
 // GET /api/returns
 router.get('/', async (req, res) => {
   try {
-    const returns = await Return.find()
+    // Scope returns to the user's store for data isolation
+    const filter = {};
+    if (req.user.storeId) filter.storeId = req.user.storeId;
+    const returns = await Return.find(filter)
       .populate('saleId')
       .populate('productId', 'name')
       .populate('processedBy', 'name')

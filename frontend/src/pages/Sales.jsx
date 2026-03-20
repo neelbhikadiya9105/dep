@@ -8,10 +8,13 @@ import Alert from '../components/ui/Alert.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { apiGet, apiPost } from '../api/axios.js';
 import useAuthStore from '../store/authStore.js';
-import { fmt } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/currency.js';
 
 export default function Sales() {
   const user = useAuthStore((s) => s.user);
+  const currency = user?.currency || 'INR';
+  const fmt = (v) => formatCurrency(v, currency);
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState([]);
@@ -26,20 +29,10 @@ export default function Sales() {
   const [scannerModalOpen, setScannerModalOpen] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
-  const [stores, setStores] = useState([]);
-  const [selectedStoreId, setSelectedStoreId] = useState(
-    () => localStorage.getItem('selectedStoreId') || ''
-  );
   const scannerRef = useRef(null);
 
   const showAlert = (message, type = 'error') => setAlert({ message, type });
   const clearAlert = () => setAlert(null);
-
-  const getStoreId = useCallback(() => {
-    if (!user) return '';
-    if (user.role !== 'owner') return user.storeId || '';
-    return selectedStoreId;
-  }, [user, selectedStoreId]);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -54,10 +47,7 @@ export default function Sales() {
 
   useEffect(() => {
     loadProducts();
-    if (user?.role === 'owner') {
-      apiGet('/stores').then((data) => setStores(Array.isArray(data) ? data : (data.data || []))).catch(() => {});
-    }
-  }, [loadProducts, user]);
+  }, [loadProducts]);
 
   const categories = [...new Set(products.map((p) => p.category))].sort();
 
@@ -123,7 +113,6 @@ export default function Sales() {
   const checkout = async () => {
     if (!cart.length) return;
     setProcessing(true);
-    const storeId = getStoreId();
     try {
       const sale = await apiPost('/sales', {
         items: cart.map((item) => ({
@@ -136,7 +125,7 @@ export default function Sales() {
         totalAmount: cartTotal,
         paymentMethod,
         customerName: customerName.trim() || 'Walk-in',
-        storeId: storeId || undefined,
+        // storeId is injected server-side from the auth token
       });
       setLastSale(sale);
       setCart([]);
@@ -228,8 +217,8 @@ export default function Sales() {
     for (const it of (sale.items || [])) {
       doc.text(String(it.name).substring(0, 30), margin, y);
       doc.text(String(it.qty), 90, y, { align: 'right' });
-      doc.text(`$${Number(it.price).toFixed(2)}`, 114, y, { align: 'right' });
-      doc.text(`$${(it.price * it.qty).toFixed(2)}`, 138, y, { align: 'right' });
+      doc.text(fmt(it.price), 114, y, { align: 'right' });
+      doc.text(fmt(it.price * it.qty), 138, y, { align: 'right' });
       y += 5;
     }
     y += 2;
@@ -238,11 +227,11 @@ export default function Sales() {
 
     doc.setFontSize(9);
     const subtotal = sale.subtotal || sale.totalAmount;
-    doc.text(`Subtotal: $${Number(subtotal).toFixed(2)}`, 138, y, { align: 'right' }); y += 5;
-    doc.text(`Tax: $${Number(sale.tax || 0).toFixed(2)}`, 138, y, { align: 'right' }); y += 5;
+    doc.text(`Subtotal: ${fmt(subtotal)}`, 138, y, { align: 'right' }); y += 5;
+    doc.text(`Tax: ${fmt(sale.tax || 0)}`, 138, y, { align: 'right' }); y += 5;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text(`Total: $${Number(sale.totalAmount).toFixed(2)}`, 138, y, { align: 'right' }); y += 8;
+    doc.text(`Total: ${fmt(sale.totalAmount)}`, 138, y, { align: 'right' }); y += 8;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.text('Thank you for your purchase!', 74, y, { align: 'center' });
@@ -275,21 +264,6 @@ export default function Sales() {
               <FiCamera size={16} />
             </button>
           </div>
-
-          {/* Store selector (owner) */}
-          {user?.role === 'owner' && stores.length > 0 && (
-            <select
-              className="form-control"
-              value={selectedStoreId}
-              onChange={(e) => {
-                setSelectedStoreId(e.target.value);
-                localStorage.setItem('selectedStoreId', e.target.value);
-              }}
-            >
-              <option value="">All Stores</option>
-              {stores.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
-            </select>
-          )}
 
           {/* Product grid */}
           {loading ? (
@@ -504,17 +478,17 @@ export default function Sales() {
                   <tr key={i} className="border-b border-slate-100">
                     <td className="py-1">{it.name}</td>
                     <td className="text-center py-1">{it.qty}</td>
-                    <td className="text-right py-1">${Number(it.price).toFixed(2)}</td>
-                    <td className="text-right py-1">${(it.price * it.qty).toFixed(2)}</td>
+                    <td className="text-right py-1">{fmt(it.price)}</td>
+                    <td className="text-right py-1">{fmt(it.price * it.qty)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div className="space-y-1 text-xs">
-              <div className="flex justify-between"><span>Subtotal</span><span>${Number(lastSale.subtotal || lastSale.totalAmount).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Tax</span><span>${Number(lastSale.tax || 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Subtotal</span><span>{fmt(lastSale.subtotal || lastSale.totalAmount)}</span></div>
+              <div className="flex justify-between"><span>Tax</span><span>{fmt(lastSale.tax || 0)}</span></div>
               <div className="flex justify-between font-bold text-base border-t border-slate-200 pt-1 mt-1">
-                <span>Total</span><span>${Number(lastSale.totalAmount).toFixed(2)}</span>
+                <span>Total</span><span>{fmt(lastSale.totalAmount)}</span>
               </div>
             </div>
             <div className="text-center text-xs text-slate-400 mt-4">Thank you for your purchase!</div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiUser, FiSettings, FiLogOut, FiSave } from 'react-icons/fi';
+import { FiUser, FiSettings, FiLogOut, FiSave, FiMoon, FiSun } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import Alert from '../components/ui/Alert.jsx';
@@ -18,7 +18,7 @@ const CURRENCIES = [
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { user: authUser, logout, setAuth } = useAuthStore();
+  const { user: authUser, logout, setAuth, theme, setTheme } = useAuthStore();
 
   const [profile, setProfile] = useState({
     name: '',
@@ -203,6 +203,31 @@ export default function Settings() {
               <div className="settings-form-row__hint">
                 Currency symbol will be applied across Dashboard, POS, Reports, and Returns.
               </div>
+            </div>
+
+            <div className="settings-form-row">
+              <label>Dark Mode</label>
+              <div className="flex items-center gap-3 mt-1">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={theme === 'dark'}
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                    theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className="text-sm text-slate-700 flex items-center gap-1">
+                  {theme === 'dark' ? <><FiMoon size={14} /> Dark Mode On</> : <><FiSun size={14} /> Light Mode</>}
+                </span>
+              </div>
+              <div className="settings-form-row__hint">Theme is saved and applies across all pages.</div>
             </div>
 
             <div className="settings-actions">

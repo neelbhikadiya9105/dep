@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   FiDollarSign, FiShoppingBag, FiPackage, FiAlertTriangle, FiUsers,
 } from 'react-icons/fi';
@@ -11,53 +11,33 @@ import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import Card from '../components/ui/Card.jsx';
 import { apiGet } from '../api/axios.js';
 import useAuthStore from '../store/authStore.js';
-import { fmt, fmtShortDate, getLast7Days, getDayKey } from '../utils/helpers.js';
+import { fmtShortDate, getLast7Days, getDayKey } from '../utils/helpers.js';
+import { formatCurrency } from '../utils/currency.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export default function Dashboard() {
   const user = useAuthStore((s) => s.user);
+  const currency = user?.currency || 'INR';
+  const fmt = (v) => formatCurrency(v, currency);
+
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]);
-  const [stores, setStores] = useState([]);
   const [dashStats, setDashStats] = useState(null);
-  const [selectedStoreId, setSelectedStoreId] = useState(
-    () => localStorage.getItem('selectedStoreId') || ''
-  );
   const [loading, setLoading] = useState(true);
-
-  const getStoreId = useCallback(() => {
-    if (!user) return '';
-    if (user.role !== 'owner') return user.storeId || '';
-    return selectedStoreId;
-  }, [user, selectedStoreId]);
-
-  useEffect(() => {
-    if (user?.role === 'owner') {
-      apiGet('/stores').then((data) => setStores(Array.isArray(data) ? data : (data.data || []))).catch(() => {});
-    }
-  }, [user]);
 
   useEffect(() => {
     setLoading(true);
-    const storeId = getStoreId();
-    const q = storeId ? `?storeId=${storeId}` : '';
     Promise.all([
-      apiGet(`/reports/sales${q}`),
-      apiGet(`/products${q}`),
-      apiGet(`/reports/dashboard${q}`),
+      apiGet('/reports/sales'),
+      apiGet('/products'),
+      apiGet('/reports/dashboard'),
     ]).then(([reportData, prods, stats]) => {
       setSales(reportData.sales || []);
       setProducts(Array.isArray(prods) ? prods : (prods.data || []));
       setDashStats(stats);
     }).catch(console.error).finally(() => setLoading(false));
-  }, [getStoreId]);
-
-  const handleStoreChange = (e) => {
-    const v = e.target.value;
-    setSelectedStoreId(v);
-    localStorage.setItem('selectedStoreId', v);
-  };
+  }, []);
 
   // KPIs
   const today = new Date().toDateString();
@@ -77,7 +57,7 @@ export default function Dashboard() {
   const chartData = {
     labels,
     datasets: [{
-      label: 'Revenue ($)',
+      label: `Revenue (${currency})`,
       data: labels.map((l) => revenueMap[l]),
       fill: true,
       backgroundColor: 'rgba(79,70,229,0.08)',
@@ -93,10 +73,10 @@ export default function Dashboard() {
     responsive: true,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' $' + c.parsed.y.toFixed(2) } },
+      tooltip: { callbacks: { label: (c) => ' ' + fmt(c.parsed.y) } },
     },
     scales: {
-      y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: (v) => '$' + v } },
+      y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: (v) => fmt(v) } },
       x: { grid: { display: false } },
     },
   };
@@ -119,23 +99,6 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      {/* Store selector */}
-      {user?.role === 'owner' && (
-        <div className="mb-5 flex items-center gap-3">
-          <label className="text-sm font-medium text-slate-600">Store:</label>
-          <select
-            value={selectedStoreId}
-            onChange={handleStoreChange}
-            className="form-control w-48"
-          >
-            <option value="">All Stores</option>
-            {stores.map((s) => (
-              <option key={s._id} value={s._id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card
@@ -159,23 +122,13 @@ export default function Dashboard() {
           colorClass="text-blue-600"
           bgClass="bg-blue-50"
         />
-        {getStoreId() ? (
-          <Card
-            title="Store Staff"
-            value={dashStats?.staffCount ?? '—'}
-            icon={<FiUsers size={18} />}
-            colorClass="text-violet-600"
-            bgClass="bg-violet-50"
-          />
-        ) : (
-          <Card
-            title="Low Stock Alerts"
-            value={lowCount}
-            icon={<FiAlertTriangle size={18} />}
-            colorClass="text-amber-600"
-            bgClass="bg-amber-50"
-          />
-        )}
+        <Card
+          title="Low Stock Alerts"
+          value={lowCount}
+          icon={<FiAlertTriangle size={18} />}
+          colorClass="text-amber-600"
+          bgClass="bg-amber-50"
+        />
       </div>
 
       {/* Chart + Top Products */}

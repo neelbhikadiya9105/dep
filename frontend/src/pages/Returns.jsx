@@ -4,9 +4,14 @@ import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import Alert from '../components/ui/Alert.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { apiGet, apiPost } from '../api/axios.js';
-import { fmt, fmtDate } from '../utils/helpers.js';
+import { fmtDate } from '../utils/helpers.js';
+import useAuthStore from '../store/authStore.js';
+import { formatCurrency } from '../utils/currency.js';
 
 export default function Returns() {
+  const user = useAuthStore((s) => s.user);
+  const currency = user?.currency || 'INR';
+  const fmt = (v) => formatCurrency(v, currency);
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);

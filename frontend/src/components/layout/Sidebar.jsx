@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   FiGrid, FiPackage, FiShoppingCart, FiRotateCcw,
   FiBarChart2, FiCheckSquare, FiShield, FiMapPin,
-  FiUsers, FiUserCheck, FiActivity, FiSettings, FiStar,
+  FiUsers, FiUserCheck, FiActivity, FiStar,
 } from 'react-icons/fi';
 import useAuthStore from '../../store/authStore.js';
 
@@ -18,8 +18,6 @@ const NAV_ITEMS = [
   { to: '/user-approvals', icon: FiUserCheck, label: 'User Approvals', roles: ['owner', 'manager'] },
   // Owner-specific
   { to: '/audit-log',    icon: FiActivity,  label: 'Audit Log',      roles: ['owner'] },
-  // Settings — all users
-  { to: '/settings',     icon: FiSettings,  label: 'Settings' },
   // Superuser only
   { to: '/superuser',    icon: FiStar,      label: 'Admin Panel',    roles: ['superuser'] },
 ];

@@ -11,10 +11,13 @@ const getStoredUser = () => {
   }
 };
 
+const getStoredTheme = () => localStorage.getItem('theme') || 'light';
+
 const useAuthStore = create((set, get) => ({
   token: getStoredToken(),
   user: getStoredUser(),
   isAuthenticated: !!getStoredToken(),
+  theme: getStoredTheme(),
 
   login: async (email, password) => {
     const data = await apiPost('/auth/login', { email, password });
@@ -56,6 +59,12 @@ const useAuthStore = create((set, get) => ({
       set({ user: updatedUser });
     }
     return data;
+  },
+
+  setTheme: (theme) => {
+    localStorage.setItem('theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    set({ theme });
   },
 }));
 

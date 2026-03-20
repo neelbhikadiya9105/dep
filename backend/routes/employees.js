@@ -16,7 +16,8 @@ router.get('/', async (req, res) => {
       if (!req.user.storeId) return res.json({ success: true, data: [] });
       filter.storeId = req.user.storeId;
     } else if (req.user.role === 'owner') {
-      if (req.query.storeId) filter.storeId = req.query.storeId;
+      // Scope to the owner's own store for data isolation
+      if (req.user.storeId) filter.storeId = req.user.storeId;
     } else {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }

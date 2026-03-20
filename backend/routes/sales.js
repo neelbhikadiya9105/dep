@@ -3,9 +3,9 @@ const router = express.Router();
 const Sale = require('../models/Sale');
 const Product = require('../models/Product');
 const Inventory = require('../models/Inventory');
-const { protect } = require('../middleware/auth');
+const { protect, blockSuperuser } = require('../middleware/auth');
 
-router.use(protect);
+router.use(protect, blockSuperuser);
 
 // Helper: generate receipt number
 function generateReceiptNumber() {
@@ -18,9 +18,11 @@ function generateReceiptNumber() {
 // POST /api/sales
 router.post('/', async (req, res) => {
   try {
-    const { items, totalAmount, paymentMethod, customerName, storeId } = req.body;
+    const { items, totalAmount, paymentMethod, customerName } = req.body;
     if (!items || !items.length)
       return res.status(400).json({ message: 'No items in sale' });
+    // Always inject storeId from auth token — never trust request body
+    const storeId = req.user.storeId || null;
 
     const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
     const tax = 0;
@@ -77,8 +79,9 @@ router.post('/', async (req, res) => {
 // GET /api/sales
 router.get('/', async (req, res) => {
   try {
+    // Scope sales to the user's store for data isolation
     const filter = {};
-    if (req.query.storeId) filter.storeId = req.query.storeId;
+    if (req.user.storeId) filter.storeId = req.user.storeId;
     const sales = await Sale.find(filter)
       .populate('employeeId', 'name')
       .populate('storeId', 'name code')
@@ -90,4 +93,3 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
-
