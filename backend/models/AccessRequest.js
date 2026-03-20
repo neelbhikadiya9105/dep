@@ -5,6 +5,8 @@ const accessRequestSchema = new mongoose.Schema({
   email: { type: String, required: true },
   businessName: { type: String, default: '' },
   message: { type: String, default: '' },
+  // passwordHash stores the bcrypt hash of the owner-chosen password at submission time
+  passwordHash: { type: String, default: '' },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],

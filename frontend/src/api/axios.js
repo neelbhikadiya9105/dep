@@ -29,6 +29,7 @@ api.interceptors.response.use(
 export const apiGet = (url, params) => api.get(url, { params }).then((r) => r.data);
 export const apiPost = (url, data) => api.post(url, data).then((r) => r.data);
 export const apiPut = (url, data) => api.put(url, data).then((r) => r.data);
+export const apiPatch = (url, data) => api.patch(url, data).then((r) => r.data);
 export const apiDelete = (url) => api.delete(url).then((r) => r.data);
 
 export default api;

@@ -21,8 +21,13 @@ const userSchema = new mongoose.Schema({
   currency: { type: String, enum: ['INR', 'USD', 'EUR', 'GBP'], default: 'INR' },
 });
 
+// Regex that matches a bcrypt hash: $2a$, $2b$, or $2y$ prefix followed by cost + 53-char hash
+const BCRYPT_HASH_REGEX = /^\$2[ayb]\$\d{2}\$.{53}$/;
+
 userSchema.pre('save', async function (next) {
   if (!this.isModified('passwordHash')) return next();
+  // Skip re-hashing if the value is already a valid bcrypt hash (e.g., pre-hashed from AccessRequest)
+  if (this.passwordHash && BCRYPT_HASH_REGEX.test(this.passwordHash)) return next();
   this.passwordHash = await bcrypt.hash(this.passwordHash, 10);
   next();
 });
