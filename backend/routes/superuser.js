@@ -507,6 +507,7 @@ router.get('/dashboard', async (req, res) => {
       ]),
     ]);
 
+  // Monthly plan prices in INR (₹) — used to estimate MRR
     const PLAN_PRICE = { free: 0, basic: 999, pro: 2999 };
     const mrr = allSubs.reduce((sum, s) => sum + (PLAN_PRICE[s.plan] || 0), 0);
 
@@ -514,6 +515,8 @@ router.get('/dashboard', async (req, res) => {
       const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
       return {
         month: d.toLocaleString('default', { month: 'short', year: '2-digit' }),
+        // Historical MRR data is not persisted; only the current month reflects live subscriptions.
+        // Future improvement: store monthly MRR snapshots in a TimeSeries collection.
         mrr: i === 11 ? mrr : 0,
       };
     });

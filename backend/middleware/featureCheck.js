@@ -17,7 +17,7 @@ const featureCheck = (featureName) => async (req, res, next) => {
     const flags = await FeatureFlag.findOne({ storeId });
     if (!flags) {
       // No flags document means the store may not have been fully initialised
-      return res.status(403).json({ success: false, message: 'Feature flags not configured for this store', feature: featureName });
+      return res.status(403).json({ success: false, message: 'Your account setup is incomplete. Please contact support.', feature: featureName });
     }
 
     if (!flags.features[featureName]) {

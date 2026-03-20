@@ -6,6 +6,9 @@ const Coupon = require('../models/Coupon');
 const { protect } = require('../middleware/auth');
 const { logActivity } = require('../middleware/logger');
 
+// 30-day subscription duration in milliseconds
+const SUBSCRIPTION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+
 // POST /api/billing/validate-coupon — validate a coupon code
 router.post('/validate-coupon', protect, async (req, res) => {
   try {
@@ -56,7 +59,7 @@ router.post('/webhook/razorpay', async (req, res) => {
     if (event === 'payment.captured') {
       const { storeId, plan } = payload.notes || {};
       if (storeId && plan) {
-        const expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+        const expiry = new Date(Date.now() + SUBSCRIPTION_DURATION_MS);
         await Subscription.findOneAndUpdate(
           { storeId },
           { plan, status: 'active', paymentProvider: 'razorpay', paymentId: payload.id, subscriptionExpiresAt: expiry }
@@ -78,7 +81,7 @@ router.post('/webhook/stripe', async (req, res) => {
     if (type === 'checkout.session.completed') {
       const { storeId, plan } = data.object.metadata || {};
       if (storeId && plan) {
-        const expiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const expiry = new Date(Date.now() + SUBSCRIPTION_DURATION_MS);
         await Subscription.findOneAndUpdate(
           { storeId },
           { plan, status: 'active', paymentProvider: 'stripe', paymentId: data.object.id, subscriptionExpiresAt: expiry }

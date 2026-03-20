@@ -17,6 +17,7 @@ const storeSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     // Subscription & billing
     plan: { type: String, enum: ['free', 'basic', 'pro'], default: 'free' },
+    // Default trial: 14 days from creation
     trialExpiresAt: { type: Date, default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) },
     subscriptionExpiresAt: { type: Date, default: null },
     // Usage stats (aggregated from sales/products)

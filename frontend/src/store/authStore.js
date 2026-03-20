@@ -27,6 +27,8 @@ const useAuthStore = create((set, get) => ({
   isAuthenticated: !!getStoredToken(),
   theme: getStoredTheme(),
   featureFlags: getStoredFeatureFlags(),
+  // true once feature flags have been fetched (or confirmed absent) for the current session
+  featureFlagsLoaded: !!getStoredFeatureFlags(),
 
   login: async (email, password) => {
     const data = await apiPost('/auth/login', { email, password });
@@ -39,12 +41,15 @@ const useAuthStore = create((set, get) => ({
       apiGet(`/superuser/feature-flags/${data.user.storeId}`)
         .then((res) => {
           const flags = res.data?.features || null;
-          if (flags) {
-            localStorage.setItem('featureFlags', JSON.stringify(flags));
-            set({ featureFlags: flags });
-          }
+          localStorage.setItem('featureFlags', JSON.stringify(flags));
+          set({ featureFlags: flags, featureFlagsLoaded: true });
         })
-        .catch(() => {});
+        .catch(() => {
+          // Could not load flags — mark as loaded with no flags; routes will deny access properly
+          set({ featureFlagsLoaded: true });
+        });
+    } else {
+      set({ featureFlagsLoaded: true });
     }
 
     return data;
@@ -59,7 +64,7 @@ const useAuthStore = create((set, get) => ({
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('featureFlags');
-    set({ token: null, user: null, isAuthenticated: false, featureFlags: null });
+    set({ token: null, user: null, isAuthenticated: false, featureFlags: null, featureFlagsLoaded: false });
   },
 
   setAuth: (token, user) => {
@@ -75,12 +80,15 @@ const useAuthStore = create((set, get) => ({
 
   /**
    * Check whether a feature is enabled for the current store.
-   * Superusers always have access. Returns true if flags not yet loaded.
+   * Superusers always have access.
+   * Returns false while flags are still loading to prevent premature access;
+   * returns true once loaded and the feature is explicitly enabled.
    */
   hasFeature: (featureName) => {
-    const { user, featureFlags } = get();
+    const { user, featureFlags, featureFlagsLoaded } = get();
     if (user?.role === 'superuser') return true;
-    if (!featureFlags) return true; // optimistic: allow until flags load
+    if (!featureFlagsLoaded) return false; // deny until flags are confirmed
+    if (!featureFlags) return true; // no flags document: store pre-dates feature flags, allow all
     return featureFlags[featureName] === true;
   },
 
