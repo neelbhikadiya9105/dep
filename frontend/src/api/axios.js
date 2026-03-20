@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
+  timeout: 15000,
 });
 
 // Request interceptor: attach token
@@ -13,7 +14,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor: handle 401
+// Response interceptor: handle 401 and provide consistent error messages
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -21,6 +22,12 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+    }
+    // Normalize timeout errors so callers can show a helpful message
+    if (error.code === 'ECONNABORTED') {
+      error.message = 'Request timed out. Please check your connection and try again.';
+    } else if (!error.response) {
+      error.message = 'Network error. Please check your connection and try again.';
     }
     return Promise.reject(error);
   }

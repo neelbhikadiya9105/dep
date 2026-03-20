@@ -6,6 +6,10 @@
   * {
     font-family: 'Inter', system-ui, sans-serif;
   }
+  body, #root {
+    background-color: var(--bg-base);
+    min-height: 100vh;
+  }
 }
 
 @layer components {

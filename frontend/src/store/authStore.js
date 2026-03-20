@@ -36,8 +36,9 @@ const useAuthStore = create((set, get) => ({
   theme: getStoredTheme(),
   featureFlags: getStoredFeatureFlags(),
   shopBranding: getStoredShopBranding(),
-  // true once feature flags have been fetched (or confirmed absent) for the current session
-  featureFlagsLoaded: !!getStoredFeatureFlags(),
+  // true once feature flags have been fetched (or confirmed absent) for the current session.
+  // On page reload we won't re-fetch flags, so treat any existing session as initialized.
+  featureFlagsLoaded: !!getStoredToken(),
 
   login: async (email, password) => {
     const data = await apiPost('/auth/login', { email, password });
