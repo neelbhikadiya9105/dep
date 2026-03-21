@@ -77,8 +77,8 @@ const useAuthStore = create((set, get) => ({
     return data;
   },
 
-  register: async (name, email, password) => {
-    const data = await apiPost('/auth/register', { name, email, password });
+  register: async (name, email, password, role, storeId) => {
+    const data = await apiPost('/auth/register', { name, email, password, role, storeId });
     return data;
   },
 

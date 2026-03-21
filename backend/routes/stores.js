@@ -8,7 +8,20 @@ const Inventory = require('../models/Inventory');
 const AuditLog = require('../models/AuditLog');
 const { protect, authorize } = require('../middleware/auth');
 
+// GET /api/stores/public — unauthenticated; returns active/trial stores for registration dropdown
+router.get('/public', async (req, res) => {
+  try {
+    const stores = await Store.find({ status: { $in: ['active', 'trial'] } })
+      .select('_id shopName name')
+      .sort({ shopName: 1, name: 1 });
+    res.json(stores);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.use(protect);
+
 
 // GET /api/stores
 router.get('/', async (req, res) => {

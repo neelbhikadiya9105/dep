@@ -15,9 +15,20 @@ import EmployeeProfile from './pages/EmployeeProfile.jsx';
 import UserApprovals from './pages/UserApprovals.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 import ForbiddenPage from './pages/ForbiddenPage.jsx';
+import NoPermission from './pages/NoPermission.jsx';
 import Settings from './pages/Settings.jsx';
 import SuperuserPanel from './pages/SuperuserPanel.jsx';
 import SupportMessages from './pages/SupportMessages.jsx';
+import useAuthStore from './store/authStore.js';
+
+function FeatureFlagRoute({ feature, children }) {
+  const hasFeature = useAuthStore((s) => s.hasFeature);
+  const user = useAuthStore((s) => s.user);
+  // Superusers bypass feature flag checks
+  if (user?.role === 'superuser') return children;
+  if (!hasFeature(feature)) return <NoPermission feature={feature} />;
+  return children;
+}
 
 export default function App() {
   return (
@@ -28,6 +39,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forbidden" element={<ForbiddenPage />} />
+        <Route path="/no-permission" element={<NoPermission />} />
         <Route path="/" element={<Navigate to="/landing" replace />} />
 
         {/* /approvals redirects to /employees (merged) */}
@@ -37,8 +49,20 @@ export default function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
         <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
-        <Route path="/returns" element={<ProtectedRoute><Returns /></ProtectedRoute>} />
-        <Route path="/reports" element={<RoleRoute roles={['owner', 'manager', 'superuser']}><Reports /></RoleRoute>} />
+        <Route path="/returns" element={
+          <ProtectedRoute>
+            <FeatureFlagRoute feature="returns">
+              <Returns />
+            </FeatureFlagRoute>
+          </ProtectedRoute>
+        } />
+        <Route path="/reports" element={
+          <RoleRoute roles={['owner', 'manager', 'superuser']}>
+            <FeatureFlagRoute feature="reports">
+              <Reports />
+            </FeatureFlagRoute>
+          </RoleRoute>
+        } />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/support" element={<ProtectedRoute><SupportMessages /></ProtectedRoute>} />
 
@@ -48,8 +72,20 @@ export default function App() {
         {/* Owner + Manager */}
         <Route path="/stores" element={<RoleRoute roles={['owner', 'manager']}><Stores /></RoleRoute>} />
         <Route path="/audit-log" element={<RoleRoute roles={['owner']}><AuditLog /></RoleRoute>} />
-        <Route path="/employees" element={<RoleRoute roles={['owner', 'manager']}><EmployeeManagement /></RoleRoute>} />
-        <Route path="/employees/:id" element={<RoleRoute roles={['owner', 'manager']}><EmployeeProfile /></RoleRoute>} />
+        <Route path="/employees" element={
+          <RoleRoute roles={['owner', 'manager']}>
+            <FeatureFlagRoute feature="employees">
+              <EmployeeManagement />
+            </FeatureFlagRoute>
+          </RoleRoute>
+        } />
+        <Route path="/employees/:id" element={
+          <RoleRoute roles={['owner', 'manager']}>
+            <FeatureFlagRoute feature="employees">
+              <EmployeeProfile />
+            </FeatureFlagRoute>
+          </RoleRoute>
+        } />
         <Route path="/user-approvals" element={<RoleRoute roles={['owner', 'manager']}><UserApprovals /></RoleRoute>} />
 
         {/* Catch-all */}

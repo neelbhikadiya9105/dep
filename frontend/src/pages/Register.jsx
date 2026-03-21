@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiShield, FiUserPlus } from 'react-icons/fi';
 import useAuthStore from '../store/authStore.js';
 import Alert from '../components/ui/Alert.jsx';
+import axios from 'axios';
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
@@ -13,10 +14,23 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('staff');
+  const [storeId, setStoreId] = useState('');
+  const [stores, setStores] = useState([]);
+  const [storesLoading, setStoresLoading] = useState(true);
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
   const [registered, setRegistered] = useState(false);
+
+  useEffect(() => {
+    // Fetch active stores for the dropdown — unauthenticated request
+    const base = import.meta.env.VITE_API_URL || '/api';
+    axios.get(`${base}/stores/public`)
+      .then((res) => setStores(res.data || []))
+      .catch(() => setStores([]))
+      .finally(() => setStoresLoading(false));
+  }, []);
 
   if (isAuthenticated) {
     navigate('/dashboard', { replace: true });
@@ -45,6 +59,10 @@ export default function Register() {
     e.preventDefault();
     clearAlert();
 
+    if (!storeId) {
+      return showAlert('Please select a store to register for.');
+    }
+
     if (!PASSWORD_REGEX.test(password)) {
       return showAlert(
         'Password must be at least 8 characters with one uppercase letter, one number, and one special character.'
@@ -53,7 +71,7 @@ export default function Register() {
 
     setLoading(true);
     try {
-      await register(name.trim(), email.trim(), password);
+      await register(name.trim(), email.trim(), password, role, storeId);
       setRegistered(true);
     } catch (err) {
       showAlert(err.response?.data?.message || err.message || 'Registration failed');
@@ -73,7 +91,7 @@ export default function Register() {
           </div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">Registration Submitted!</h2>
           <p className="text-slate-500 text-sm mb-6">
-            Your account is pending approval. An administrator will review your request and you'll be able to log in once approved.
+            Your registration is pending approval by your store administrator. You&apos;ll be able to log in once approved.
           </p>
           <Link to="/login" className="btn btn-primary justify-center w-full">
             Back to Login
@@ -154,9 +172,47 @@ export default function Register() {
             </ul>
           </div>
 
+          <div>
+            <label className="form-label">Role</label>
+            <select
+              className="form-control"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              required
+            >
+              <option value="staff">Staff</option>
+              <option value="manager">Manager</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="form-label">Store <span className="text-red-500">*</span></label>
+            {storesLoading ? (
+              <div className="form-control text-slate-400 text-sm">Loading stores…</div>
+            ) : stores.length === 0 ? (
+              <div className="form-control text-slate-400 text-sm">
+                No active stores available. Contact your administrator.
+              </div>
+            ) : (
+              <select
+                className="form-control"
+                value={storeId}
+                onChange={(e) => setStoreId(e.target.value)}
+                required
+              >
+                <option value="">— Select a store —</option>
+                {stores.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.shopName || s.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || storesLoading || stores.length === 0}
             className="btn btn-primary w-full justify-center py-3"
           >
             {loading ? (

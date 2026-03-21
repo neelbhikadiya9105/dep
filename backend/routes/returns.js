@@ -3,8 +3,9 @@ const router = express.Router();
 const Return = require('../models/Return');
 const Inventory = require('../models/Inventory');
 const { protect, blockSuperuser } = require('../middleware/auth');
+const featureCheck = require('../middleware/featureCheck');
 
-router.use(protect, blockSuperuser);
+router.use(protect, blockSuperuser, featureCheck('returns'));
 
 // Reasons that trigger auto-restock
 const RESTOCK_REASONS = ['wrong_item', 'others'];
