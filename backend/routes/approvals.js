@@ -27,6 +27,8 @@ router.put('/users/:id/approve', authorize('owner', 'manager'), async (req, res)
   try {
     const { role, storeId } = req.body;
 
+    // Fetch the target user first so we can check their storeId before applying
+    // any role-specific restrictions (manager checks below also reference `user`).
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
