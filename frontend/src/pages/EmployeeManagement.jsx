@@ -21,6 +21,7 @@ const STATUS_BADGE = {
 export default function EmployeeManagement() {
   const { user } = useAuthStore();
   const isOwner = user?.role === 'owner';
+  const isManager = user?.role === 'manager';
 
   const [employees, setEmployees] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -44,7 +45,7 @@ export default function EmployeeManagement() {
       setEmployees(Array.isArray(empData) ? empData : (empData.data || []));
       setStores(Array.isArray(storeData) ? storeData : []);
 
-      if (isOwner) {
+      if (isOwner || isManager) {
         try {
           const pending = await apiGet('/approvals/pending-users');
           setPendingUsers(Array.isArray(pending) ? pending : (pending.data || []));
@@ -55,7 +56,7 @@ export default function EmployeeManagement() {
     } finally {
       setLoading(false);
     }
-  }, [isOwner]);
+  }, [isOwner, isManager]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -116,7 +117,7 @@ export default function EmployeeManagement() {
       ) : (
         <>
           {/* ── Pending Approvals Section ── */}
-          {isOwner && pendingUsers.length > 0 && (
+          {(isOwner || isManager) && pendingUsers.length > 0 && (
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-3">
                 <FiClock size={16} className="text-amber-500" />

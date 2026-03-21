@@ -48,10 +48,10 @@ export default function Landing() {
 
   // Fetch available stores for the selection dropdown
   useEffect(() => {
-    apiGet('/stores')
+    apiGet('/stores/public')
       .then((data) => {
         const arr = Array.isArray(data) ? data : (data.data || []);
-        setStores(arr.filter((s) => s.status !== 'banned' && s.status !== 'inactive'));
+        setStores(arr);
       })
       .catch(() => { /* non-critical */ });
   }, []);

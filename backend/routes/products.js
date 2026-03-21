@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const Approval = require('../models/Approval');
+const Inventory = require('../models/Inventory');
 const { protect, authorize, blockSuperuser } = require('../middleware/auth');
 
 router.use(protect, blockSuperuser);
@@ -38,6 +39,28 @@ router.get('/', async (req, res) => {
       filter.storeId = req.user.storeId;
     }
     const products = await Product.find(filter).populate('createdBy', 'name');
+
+    // When the user belongs to a store, use Inventory quantities so the UI
+    // always reflects the stock that was actually decremented on each sale.
+    if (req.user.storeId) {
+      const inventoryRecords = await Inventory.find({
+        storeId: req.user.storeId,
+        productId: { $in: products.map((p) => p._id) },
+      });
+      const inventoryMap = {};
+      for (const inv of inventoryRecords) {
+        inventoryMap[inv.productId.toString()] = inv.quantity;
+      }
+      const enriched = products.map((p) => {
+        const obj = p.toJSON();
+        if (inventoryMap[p._id.toString()] !== undefined) {
+          obj.quantity = inventoryMap[p._id.toString()];
+        }
+        return obj;
+      });
+      return res.json(enriched);
+    }
+
     res.json(products);
   } catch (err) {
     res.status(500).json({ message: err.message });
