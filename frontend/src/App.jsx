@@ -46,17 +46,17 @@ export default function App() {
 
         {/* Protected — any authenticated user */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-        <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+        <Route path="/inventory" element={<RoleRoute roles={['owner', 'manager', 'staff']}><Inventory /></RoleRoute>} />
+        <Route path="/sales" element={<RoleRoute roles={['owner', 'manager', 'staff']}><Sales /></RoleRoute>} />
         <Route path="/returns" element={
-          <ProtectedRoute>
+          <RoleRoute roles={['owner', 'manager', 'staff']}>
             <FeatureFlagRoute feature="returns">
               <Returns />
             </FeatureFlagRoute>
-          </ProtectedRoute>
+          </RoleRoute>
         } />
         <Route path="/reports" element={
-          <RoleRoute roles={['owner', 'manager', 'superuser']}>
+          <RoleRoute roles={['owner', 'manager']}>
             <FeatureFlagRoute feature="reports">
               <Reports />
             </FeatureFlagRoute>

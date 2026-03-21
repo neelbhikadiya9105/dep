@@ -8,10 +8,10 @@ import useAuthStore from '../../store/authStore.js';
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: FiGrid,        label: 'Dashboard' },
-  { to: '/inventory', icon: FiPackage,     label: 'Inventory' },
-  { to: '/sales',     icon: FiShoppingCart,label: 'Sales / POS' },
-  { to: '/returns',   icon: FiRotateCcw,   label: 'Returns',  feature: 'returns' },
-  { to: '/reports',   icon: FiBarChart2,   label: 'Reports',  roles: ['owner', 'manager', 'superuser'], feature: 'reports' },
+  { to: '/inventory', icon: FiPackage,     label: 'Inventory',  roles: ['owner', 'manager', 'staff'] },
+  { to: '/sales',     icon: FiShoppingCart,label: 'Sales / POS', roles: ['owner', 'manager', 'staff'] },
+  { to: '/returns',   icon: FiRotateCcw,   label: 'Returns',    roles: ['owner', 'manager', 'staff'], feature: 'returns' },
+  { to: '/reports',   icon: FiBarChart2,   label: 'Reports',    roles: ['owner', 'manager'], feature: 'reports' },
   // Owner + Manager
   { to: '/employees', icon: FiUsers,    label: 'Employees', roles: ['owner', 'manager'], feature: 'employees' },
   // Owner-specific
