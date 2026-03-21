@@ -5,6 +5,7 @@ const approvalSchema = new mongoose.Schema({
   description: { type: String, required: true },
   requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', default: null },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],

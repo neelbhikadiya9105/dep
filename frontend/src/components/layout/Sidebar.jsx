@@ -10,10 +10,10 @@ const NAV_ITEMS = [
   { to: '/dashboard', icon: FiGrid,        label: 'Dashboard' },
   { to: '/inventory', icon: FiPackage,     label: 'Inventory' },
   { to: '/sales',     icon: FiShoppingCart,label: 'Sales / POS' },
-  { to: '/returns',   icon: FiRotateCcw,   label: 'Returns' },
-  { to: '/reports',   icon: FiBarChart2,   label: 'Reports', roles: ['owner', 'manager', 'superuser'] },
+  { to: '/returns',   icon: FiRotateCcw,   label: 'Returns',  feature: 'returns' },
+  { to: '/reports',   icon: FiBarChart2,   label: 'Reports',  roles: ['owner', 'manager', 'superuser'], feature: 'reports' },
   // Owner + Manager
-  { to: '/employees',      icon: FiUsers,     label: 'Employees',      roles: ['owner', 'manager'] },
+  { to: '/employees',      icon: FiUsers,     label: 'Employees',      roles: ['owner', 'manager'], feature: 'employees' },
   { to: '/user-approvals', icon: FiUserCheck, label: 'User Approvals', roles: ['owner', 'manager'] },
   // Owner-specific
   { to: '/audit-log',    icon: FiActivity,  label: 'Audit Log',      roles: ['owner'] },
@@ -24,10 +24,15 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const user = useAuthStore((s) => s.user);
   const shopBranding = useAuthStore((s) => s.shopBranding);
+  const hasFeature = useAuthStore((s) => s.hasFeature);
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.roles || (user && item.roles.includes(user.role))
-  );
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    // Role check
+    if (item.roles && (!user || !item.roles.includes(user.role))) return false;
+    // Feature flag check — superusers always see all items in their own panel
+    if (item.feature && user?.role !== 'superuser' && !hasFeature(item.feature)) return false;
+    return true;
+  });
 
   const displayName = user?.displayName || user?.name || '';
   const shopName = shopBranding?.shopName || shopBranding?.name || '';

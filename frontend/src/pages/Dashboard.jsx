@@ -42,7 +42,10 @@ export default function Dashboard() {
   // KPIs
   const today = new Date().toDateString();
   const todaySales = sales.filter((s) => new Date(s.createdAt).toDateString() === today);
-  const todayRevenue = todaySales.reduce((sum, s) => sum + s.totalAmount, 0);
+  const todayRevenue = todaySales.reduce(
+    (sum, s) => sum + s.totalAmount - (s.returnedAmount || 0),
+    0
+  );
   const lowCount = products.filter((p) => p.quantity <= p.threshold).length;
 
   // Chart
@@ -51,7 +54,7 @@ export default function Dashboard() {
   const revenueMap = Object.fromEntries(labels.map((l) => [l, 0]));
   sales.forEach((s) => {
     const key = getDayKey(s.createdAt);
-    if (revenueMap[key] !== undefined) revenueMap[key] += s.totalAmount;
+    if (revenueMap[key] !== undefined) revenueMap[key] += (s.totalAmount - (s.returnedAmount || 0));
   });
 
   const chartData = {
@@ -107,7 +110,9 @@ export default function Dashboard() {
           icon={<FiDollarSign size={18} />}
           colorClass="text-indigo-600"
           bgClass="bg-indigo-50"
-        />
+        >
+          <p className="text-xs text-slate-400 mt-1">Net of returns</p>
+        </Card>
         <Card
           title="Today's Orders"
           value={todaySales.length}

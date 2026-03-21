@@ -40,7 +40,7 @@ export default function Reports() {
   const [endDate, setEndDate] = useState(today);
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [sales, setSales] = useState([]);
-  const [summary, setSummary] = useState({ totalRevenue: 0, totalOrders: 0, totalProfit: 0, profitMargin: 0 });
+  const [summary, setSummary] = useState({ grossRevenue: 0, totalReturned: 0, totalRevenue: 0, totalOrders: 0, totalProfit: 0, profitMargin: 0 });
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
 
@@ -56,7 +56,7 @@ export default function Reports() {
     try {
       const data = await apiGet('/reports/sales', params);
       setSales(data.sales || []);
-      setSummary(data.summary || { totalRevenue: 0, totalOrders: 0, totalProfit: 0, profitMargin: 0 });
+      setSummary(data.summary || { grossRevenue: 0, totalReturned: 0, totalRevenue: 0, totalOrders: 0, totalProfit: 0, profitMargin: 0 });
     } catch (err) {
       showAlert(err.response?.data?.message || err.message);
     } finally {
@@ -112,7 +112,9 @@ export default function Reports() {
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     const summaryRows = [
-      ['Total Revenue', fmt(summary.totalRevenue)],
+      ['Gross Revenue', fmt(summary.grossRevenue ?? summary.totalRevenue)],
+      ['Total Returned', fmt(summary.totalReturned ?? 0)],
+      ['Net Revenue', fmt(summary.totalRevenue)],
       ['Total Orders', String(summary.totalOrders)],
       ['Estimated Profit', fmt(summary.totalProfit)],
       ['Profit Margin', `${summary.profitMargin}%`],
@@ -171,10 +173,12 @@ export default function Reports() {
 
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
-    doc.text(`Total Revenue: ${fmt(summary.totalRevenue)}`, margin, y); y += 6;
+    doc.text(`Gross Revenue: ${fmt(summary.grossRevenue ?? summary.totalRevenue)}`, margin, y); y += 6;
+    doc.text(`Total Returned: ${fmt(summary.totalReturned ?? 0)}`, margin, y); y += 6;
+    doc.text(`Net Revenue: ${fmt(summary.totalRevenue)}`, margin, y); y += 6;
     doc.text(`Estimated Profit (20%): ${fmt(summary.totalProfit)}`, margin, y); y += 6;
     doc.text(`Profit Margin: ${summary.profitMargin}%`, margin, y); y += 6;
-    doc.text('Note: Profit is estimated at 20% of revenue.', margin, y);
+    doc.text('Note: Profit is estimated at 20% of net revenue.', margin, y);
 
     doc.save(fileName);
   };
@@ -231,25 +235,29 @@ export default function Reports() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <Card
-          title="Revenue"
-          value={fmt(summary.totalRevenue)}
+          title="Gross Revenue"
+          value={fmt(summary.grossRevenue ?? summary.totalRevenue)}
           icon={<FiDollarSign size={18} />}
           colorClass="text-indigo-600"
           bgClass="bg-indigo-50"
         />
         <Card
-          title="Orders"
-          value={summary.totalOrders}
-          icon={<FiShoppingBag size={18} />}
-          colorClass="text-blue-600"
-          bgClass="bg-blue-50"
-        />
+          title="Net Revenue"
+          value={fmt(summary.totalRevenue)}
+          icon={<FiDollarSign size={18} />}
+          colorClass="text-emerald-600"
+          bgClass="bg-emerald-50"
+        >
+          {summary.totalReturned > 0 && (
+            <p className="text-xs text-red-500 mt-1">−{fmt(summary.totalReturned)} returned</p>
+          )}
+        </Card>
         <Card
           title="Profit"
           value={fmt(summary.totalProfit)}
           icon={<FiTrendingUp size={18} />}
-          colorClass="text-emerald-600"
-          bgClass="bg-emerald-50"
+          colorClass="text-blue-600"
+          bgClass="bg-blue-50"
         />
         <Card
           title="Profit Margin"
@@ -279,13 +287,14 @@ export default function Reports() {
                   <th>Total</th>
                   <th>Payment</th>
                   <th>Employee</th>
+                  <th>Status</th>
                   <th>Date</th>
                 </tr>
               </thead>
               <tbody>
                 {sales.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-10 text-slate-400">No sales records found</td>
+                    <td colSpan={8} className="text-center py-10 text-slate-400">No sales records found</td>
                   </tr>
                 ) : (
                   sales.map((s) => (
@@ -297,13 +306,26 @@ export default function Reports() {
                           <span key={idx} className="block text-xs">{i.name} ×{i.qty}</span>
                         ))}
                       </td>
-                      <td className="font-bold text-emerald-600">{fmt(s.totalAmount)}</td>
+                      <td className="font-bold text-emerald-600">
+                        {fmt(s.totalAmount)}
+                        {s.returnedAmount > 0 && (
+                          <span className="block text-xs text-red-500">−{fmt(s.returnedAmount)}</span>
+                        )}
+                      </td>
                       <td>
                         <span className={`badge ${s.paymentMethod === 'cash' ? 'badge-success' : s.paymentMethod === 'upi' ? 'badge-warning' : 'badge-info'}`}>
                           {s.paymentMethod}
                         </span>
                       </td>
                       <td>{s.employeeId?.name || 'N/A'}</td>
+                      <td>
+                        {s.returnStatus === 'returned' && (
+                          <span className="badge badge-danger">Returned</span>
+                        )}
+                        {s.returnStatus === 'partial_return' && (
+                          <span className="badge badge-warning">Partial Return</span>
+                        )}
+                      </td>
                       <td className="text-slate-400 text-xs">{fmtDate(s.createdAt)}</td>
                     </tr>
                   ))

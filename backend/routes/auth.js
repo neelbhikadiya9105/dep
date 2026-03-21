@@ -68,7 +68,7 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, storeId, role } = req.body;
     if (!name || !email || !password)
       return res.status(400).json({ success: false, message: 'Name, email, and password required' });
 
@@ -79,6 +79,26 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Block Owner and Superuser self-registration
+    if (role && ['owner', 'superuser'].includes(role)) {
+      return res.status(403).json({ success: false, message: 'Owner and Superuser accounts cannot be self-registered' });
+    }
+
+    const allowedRoles = ['manager', 'staff'];
+    const assignedRole = role && allowedRoles.includes(role) ? role : 'staff';
+
+    // Validate storeId if provided
+    let assignedStoreId = null;
+    if (storeId) {
+      const Store = require('../models/Store');
+      const store = await Store.findById(storeId);
+      if (!store) return res.status(400).json({ success: false, message: 'Selected store not found' });
+      if (!['active', 'trial'].includes(store.status)) {
+        return res.status(400).json({ success: false, message: 'Selected store is not currently active' });
+      }
+      assignedStoreId = store._id;
+    }
+
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) return res.status(400).json({ success: false, message: 'Email already in use' });
 
@@ -86,13 +106,16 @@ router.post('/register', async (req, res) => {
       name,
       email,
       passwordHash: password,
-      role: 'staff',
+      role: assignedRole,
+      storeId: assignedStoreId,
       status: 'pending'
     });
 
-    // Notify owners and managers about new registration
+    // Notify only the owners and managers of the selected store
     try {
-      const managers = await User.find({ role: { $in: ['owner', 'manager'] }, status: 'approved' }).select('_id');
+      const managerFilter = { role: { $in: ['owner', 'manager'] }, status: 'approved' };
+      if (assignedStoreId) managerFilter.storeId = assignedStoreId;
+      const managers = await User.find(managerFilter).select('_id');
       const notifications = managers.map((m) => ({
         userId: m._id,
         type: 'new_registration',
@@ -105,7 +128,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Your account is pending approval.',
+      message: 'Registration successful. Your registration is pending approval by your store administrator.',
       user: { id: user._id, name: user.name, email: user.email, status: user.status }
     });
   } catch (err) {

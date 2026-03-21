@@ -8,10 +8,12 @@ const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect);
 
-// GET /api/approvals/pending-users — list pending users (owner + manager)
+// GET /api/approvals/pending-users — list pending users (owner + manager, scoped to their store)
 router.get('/pending-users', authorize('owner', 'manager'), async (req, res) => {
   try {
-    const users = await User.find({ status: 'pending' })
+    const filter = { status: 'pending' };
+    if (req.user.storeId) filter.storeId = req.user.storeId;
+    const users = await User.find(filter)
       .select('-passwordHash')
       .sort({ createdAt: -1 });
     res.json({ success: true, data: users });
@@ -25,6 +27,16 @@ router.put('/users/:id/approve', authorize('owner', 'manager'), async (req, res)
   try {
     const { role, storeId } = req.body;
 
+    // Fetch the target user first so we can check their storeId before applying
+    // any role-specific restrictions (manager checks below also reference `user`).
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Owners and managers can only approve users for their own store
+    if (req.user.storeId && user.storeId && String(user.storeId) !== String(req.user.storeId)) {
+      return res.status(403).json({ success: false, message: 'You can only approve users for your own store' });
+    }
+
     if (req.user.role === 'manager') {
       if (role && role !== 'staff') {
         return res.status(403).json({ success: false, message: 'Managers can only approve staff accounts' });
@@ -33,9 +45,6 @@ router.put('/users/:id/approve', authorize('owner', 'manager'), async (req, res)
         return res.status(403).json({ success: false, message: 'Managers can only approve users for their own store' });
       }
     }
-
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
     user.status = 'approved';
     if (role) user.role = role;
@@ -95,7 +104,10 @@ router.put('/users/:id/reject', authorize('owner', 'manager'), async (req, res) 
 router.get('/', async (req, res) => {
   try {
     let filter = {};
-    if (req.user.role !== 'owner') {
+    if (req.user.role === 'owner' || req.user.role === 'manager') {
+      // Scope to reviewer's store so cross-store data is never exposed
+      if (req.user.storeId) filter.storeId = req.user.storeId;
+    } else {
       filter.requestedBy = req.user.id;
     }
     const approvals = await Approval.find(filter)
@@ -119,6 +131,7 @@ router.post('/', async (req, res) => {
       action,
       description,
       requestedBy: req.user.id,
+      storeId: req.user.storeId || null,
       metadata
     });
     res.status(201).json(approval);
@@ -128,19 +141,27 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/approvals/:id
-router.put('/:id', authorize('owner'), async (req, res) => {
+router.put('/:id', authorize('owner', 'manager'), async (req, res) => {
   try {
     const { status } = req.body;
     if (!['approved', 'rejected'].includes(status))
       return res.status(400).json({ message: 'Status must be approved or rejected' });
 
-    const approval = await Approval.findByIdAndUpdate(
-      req.params.id,
-      { status, approvedBy: req.user.id, updatedAt: new Date() },
-      { new: true }
-    ).populate('requestedBy', 'name email').populate('approvedBy', 'name email');
-
+    const approval = await Approval.findById(req.params.id);
     if (!approval) return res.status(404).json({ message: 'Approval not found' });
+
+    // Enforce store ownership — reviewers can only act on their own store's requests
+    if (req.user.storeId && approval.storeId && String(approval.storeId) !== String(req.user.storeId)) {
+      return res.status(403).json({ message: 'Forbidden: approval belongs to a different store' });
+    }
+
+    approval.status = status;
+    approval.approvedBy = req.user.id;
+    approval.updatedAt = new Date();
+    await approval.save();
+
+    await approval.populate('requestedBy', 'name email');
+    await approval.populate('approvedBy', 'name email');
 
     // If approved product deletion, delete the product
     if (approval.action === 'delete_product' && status === 'approved' && approval.metadata?.productId) {

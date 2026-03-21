@@ -5,8 +5,9 @@ const Store = require('../models/Store');
 const AuditLog = require('../models/AuditLog');
 const Notification = require('../models/Notification');
 const { protect, authorize } = require('../middleware/auth');
+const featureCheck = require('../middleware/featureCheck');
 
-router.use(protect);
+router.use(protect, featureCheck('employees'));
 
 // GET /api/employees — owner: all (with optional storeId filter), manager: own store
 router.get('/', async (req, res) => {
