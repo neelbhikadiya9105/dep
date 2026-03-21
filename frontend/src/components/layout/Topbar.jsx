@@ -13,7 +13,6 @@ const PAGE_TITLES = {
   '/reports':   'Reports',
   '/stores':    'Stores',
   '/employees': 'Employee Management',
-  '/user-approvals': 'User Approvals',
   '/audit-log': 'Audit Log',
   '/settings':  'Settings',
   '/superuser': 'Admin Panel',

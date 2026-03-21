@@ -12,7 +12,6 @@ import Reports from './pages/Reports.jsx';
 import Stores from './pages/Stores.jsx';
 import EmployeeManagement from './pages/EmployeeManagement.jsx';
 import EmployeeProfile from './pages/EmployeeProfile.jsx';
-import UserApprovals from './pages/UserApprovals.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 import ForbiddenPage from './pages/ForbiddenPage.jsx';
 import NoPermission from './pages/NoPermission.jsx';
@@ -26,7 +25,7 @@ function FeatureFlagRoute({ feature, children }) {
   const user = useAuthStore((s) => s.user);
   // Superusers bypass feature flag checks
   if (user?.role === 'superuser') return children;
-  if (!hasFeature(feature)) return <NoPermission feature={feature} />;
+  if (!hasFeature(feature)) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -86,7 +85,7 @@ export default function App() {
             </FeatureFlagRoute>
           </RoleRoute>
         } />
-        <Route path="/user-approvals" element={<RoleRoute roles={['owner', 'manager']}><UserApprovals /></RoleRoute>} />
+        <Route path="/user-approvals" element={<Navigate to="/employees" replace />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
