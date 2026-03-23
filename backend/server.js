@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 
@@ -57,17 +56,6 @@ app.use('/api/superuser', require('./routes/superuser'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api/messages', require('./routes/messages'));
-
-const fs = require('fs');
-const distPath = path.join(__dirname, '../frontend/dist');
-const srcPath = path.join(__dirname, '../frontend');
-const frontendPath = fs.existsSync(distPath) ? distPath : srcPath;
-
-app.use(express.static(frontendPath));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
