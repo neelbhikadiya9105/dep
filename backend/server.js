@@ -30,8 +30,11 @@ const authLimiter = rateLimit({
 });
 
 app.use(generalLimiter);
-
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 app.use('/api/auth', authLimiter, require('./routes/auth'));
