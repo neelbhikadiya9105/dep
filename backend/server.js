@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 
@@ -27,18 +26,20 @@ const authLimiter = rateLimit({
   message: { message: 'Too many login attempts, please try again later.' }
 });
 
-const corsOptions = {
-  origin: "https://avangersinve.netlify.app",
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-};
+// 🔥 MANUAL CORS (final fix)
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "https://avangersinve.netlify.app");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
 
 app.use(express.json());
-
 app.use(generalLimiter);
 
 app.use('/api/auth', authLimiter, require('./routes/auth'));
