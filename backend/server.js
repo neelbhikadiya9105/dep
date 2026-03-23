@@ -12,9 +12,8 @@ connectDB().then(async () => {
   await seedOwner();
 });
 
-// Rate limiting
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 500,
   standardHeaders: true,
   legacyHeaders: false,
@@ -29,13 +28,19 @@ const authLimiter = rateLimit({
   message: { message: 'Too many login attempts, please try again later.' }
 });
 
-app.use(generalLimiter);
-app.use(cors({
-  origin: "*",
+const corsOptions = {
+  origin: "https://avangersinve.netlify.app",
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
+
+app.use(generalLimiter);
 
 app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
@@ -53,11 +58,9 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/billing', require('./routes/billing'));
 app.use('/api/messages', require('./routes/messages'));
 
-// Serve frontend: production build (dist/) takes precedence; fall back to source
+const fs = require('fs');
 const distPath = path.join(__dirname, '../frontend/dist');
 const srcPath = path.join(__dirname, '../frontend');
-
-const fs = require('fs');
 const frontendPath = fs.existsSync(distPath) ? distPath : srcPath;
 
 app.use(express.static(frontendPath));
@@ -68,4 +71,3 @@ app.get('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
