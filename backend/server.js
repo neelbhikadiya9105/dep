@@ -28,7 +28,7 @@ const authLimiter = rateLimit({
 });
 
 const allowedOrigins = [
-  'https://avangersinve.netlify.app',
+  'https://inveave.netlify.app',
   'http://localhost:5173'
 ];
 
