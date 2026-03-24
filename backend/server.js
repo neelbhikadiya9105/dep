@@ -29,7 +29,7 @@ const authLimiter = rateLimit({
 
 const allowedOrigins = [
   'https://avangersinve.netlify.app',
-  'http://localhost:3000'
+  'http://localhost:5173'
 ];
 
 app.use((req, res, next) => {
