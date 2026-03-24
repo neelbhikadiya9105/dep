@@ -2,8 +2,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 248, 255, 0.94) 100%);
 }
 
 .report-filter-item {
@@ -13,17 +16,42 @@
 .report-actions {
   display: flex;
   gap: 0.5rem;
+  margin-left: auto;
 }
 
 .report-kpis {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.report-sale-id {
+  color: var(--text-secondary);
+}
+
+.report-item-line {
+  display: block;
+  margin-bottom: 0.18rem;
+}
+
+.report-total {
+  white-space: nowrap;
 }
 
 @media (min-width: 1024px) {
   .report-kpis {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .report-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .report-actions .btn {
+    flex: 1;
   }
 }

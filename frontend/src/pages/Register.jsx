@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+ï»¿import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiShield, FiUserPlus } from 'react-icons/fi';
 import useAuthStore from '../store/authStore.js';
@@ -115,7 +115,7 @@ export default function Register() {
               <input
                 type={showPw ? 'text' : 'password'}
                 className="form-control has-icon"
-                placeholder="••••••••"
+                placeholder="Create a password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -148,7 +148,7 @@ export default function Register() {
               <div className="form-control">No active stores available. Contact your administrator.</div>
             ) : (
               <select className="form-control" value={storeId} onChange={(e) => setStoreId(e.target.value)} required>
-                <option value="">— Select a store —</option>
+                <option value="">Select a store</option>
                 {stores.map((store) => (
                   <option key={store._id} value={store._id}>{store.shopName || store.name}</option>
                 ))}
@@ -169,3 +169,4 @@ export default function Register() {
     </div>
   );
 }
+

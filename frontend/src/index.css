@@ -1,33 +1,92 @@
 ﻿:root {
-  --bg-base: #f8f9fa;
+  --color-white: #ffffff;
+  --color-slate-50: #f4f7fb;
+  --color-slate-100: #eaf0f7;
+  --color-slate-200: #d9e2ef;
+  --color-slate-300: #bfd0e3;
+  --color-slate-400: #8fa2bd;
+  --color-slate-500: #6a7a92;
+  --color-slate-600: #4f5f78;
+  --color-slate-700: #334155;
+  --color-slate-800: #142033;
+  --color-slate-900: #0b1220;
+  --color-indigo-50: #eef4ff;
+  --color-indigo-100: #dbeafe;
+  --color-indigo-300: #93c5fd;
+  --color-indigo-500: #3b82f6;
+  --color-indigo-600: #2563eb;
+  --color-indigo-700: #1d4ed8;
+  --color-emerald-100: #dcfce7;
+  --color-emerald-500: #22c55e;
+  --color-emerald-600: #16a34a;
+  --color-emerald-700: #15803d;
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-amber-100: #fef3c7;
+  --color-amber-500: #f59e0b;
+  --color-amber-700: #b45309;
+  --color-blue-100: #dbeafe;
+  --color-blue-700: #1d4ed8;
+  --color-teal-100: #ccfbf1;
+  --color-teal-700: #0f766e;
+  --color-purple-100: #f3e8ff;
+  --color-purple-700: #7e22ce;
+  --bg-base: #f4f7fb;
   --bg-surface: #ffffff;
-  --bg-elevated: #f1f3f5;
-  --bg-overlay: #e9ecef;
-  --border: #dee2e6;
-  --text-primary: #0d1117;
-  --text-secondary: #495057;
-  --text-muted: #868e96;
-  --accent: #2e75b6;
-  --accent-hover: #1f5c9a;
-  --success: #2d9d5f;
-  --danger: #c0392b;
-  --warning: #d4820a;
+  --bg-elevated: #eef3f9;
+  --bg-overlay: #dfe8f4;
+  --border: #d9e2ef;
+  --text-primary: #142033;
+  --text-secondary: #4f5f78;
+  --text-muted: #7e8ba0;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --success: #15803d;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --shadow-sm: 0 10px 24px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 18px 38px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 24px 48px rgba(15, 23, 42, 0.12);
+  --shadow-xl: 0 32px 70px rgba(15, 23, 42, 0.16);
+  --shadow-2xl: 0 40px 90px rgba(15, 23, 42, 0.2);
+  --radius-md: 0.5rem;
+  --radius-lg: 0.85rem;
+  --radius-xl: 1.2rem;
+  --radius-2xl: 1.6rem;
 }
 
 [data-theme="dark"] {
-  --bg-base: #0f1117;
-  --bg-surface: #1a1d27;
-  --bg-elevated: #222536;
-  --bg-overlay: #2a2d3e;
-  --border: #2e3148;
-  --text-primary: #e8eaf0;
-  --text-secondary: #9198b0;
-  --text-muted: #555b78;
-  --accent: #4f8ecc;
-  --accent-hover: #6aa3d8;
-  --success: #3dbf74;
-  --danger: #e05c4d;
-  --warning: #f0a030;
+  --color-slate-50: #0f1724;
+  --color-slate-100: #162033;
+  --color-slate-200: #22304a;
+  --color-slate-300: #31415f;
+  --color-slate-400: #7f8da8;
+  --color-slate-500: #97a3bc;
+  --color-slate-600: #c2cbe0;
+  --color-slate-700: #d6def1;
+  --color-slate-800: #ebf0fb;
+  --color-slate-900: #f8fbff;
+  --bg-base: #0b1220;
+  --bg-surface: #111b2d;
+  --bg-elevated: #162338;
+  --bg-overlay: #1d2c43;
+  --border: #23314b;
+  --text-primary: #ebf0fb;
+  --text-secondary: #c2cbe0;
+  --text-muted: #8a97af;
+  --accent: #60a5fa;
+  --accent-hover: #93c5fd;
+  --success: #4ade80;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --shadow-sm: 0 10px 24px rgba(2, 6, 23, 0.28);
+  --shadow-md: 0 18px 38px rgba(2, 6, 23, 0.35);
+  --shadow-lg: 0 24px 48px rgba(2, 6, 23, 0.45);
+  --shadow-xl: 0 32px 70px rgba(2, 6, 23, 0.55);
+  --shadow-2xl: 0 40px 90px rgba(2, 6, 23, 0.6);
 }
 
 *,
@@ -44,7 +103,9 @@ body,
 
 body {
   margin: 0;
-  font-family: Inter, system-ui, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 24%), linear-gradient(180deg, #f8fbff 0%, var(--bg-base) 100%);
   background-color: var(--bg-base);
   color: var(--text-primary);
 }
@@ -81,21 +142,21 @@ img {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-slate-100);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: var(--color-slate-300);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-slate-400);
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-track {

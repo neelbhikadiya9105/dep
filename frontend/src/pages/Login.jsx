@@ -1,4 +1,4 @@
-import { useState } from 'react';
+ï»¿import { useState } from 'react';
 import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiShield, FiLogIn } from 'react-icons/fi';
 import useAuthStore from '../store/authStore.js';
@@ -67,7 +67,7 @@ export default function Login() {
               <input
                 type={showPw ? 'text' : 'password'}
                 className="form-control has-icon"
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -92,3 +92,4 @@ export default function Login() {
     </div>
   );
 }
+

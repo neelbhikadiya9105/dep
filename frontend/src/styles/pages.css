@@ -1,4 +1,4 @@
-.page-header {
+﻿.page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -8,26 +8,27 @@
 
 .page-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.45rem;
   font-weight: 700;
-  color: var(--color-slate-800);
+  color: var(--text-primary);
 }
 
 .page-subtitle {
   margin: 0.25rem 0 0;
-  font-size: 0.875rem;
-  color: var(--color-slate-500);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
 .panel {
-  background: var(--color-white);
-  border: 1px solid var(--color-slate-100);
-  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(217, 226, 239, 0.9);
+  border-radius: 1.25rem;
   box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
 }
 
 .panel-body {
-  padding: 1.25rem;
+  padding: 1.4rem;
 }
 
 .panel-header {
@@ -35,20 +36,20 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--color-slate-100);
+  padding: 1.05rem 1.4rem;
+  border-bottom: 1px solid #edf2f8;
 }
 
 .panel-title {
   margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-slate-700);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .panel-meta {
-  font-size: 0.75rem;
-  color: var(--color-slate-400);
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 .stack-sm {
@@ -69,7 +70,7 @@
 .empty-state {
   padding: 2.5rem 1rem;
   text-align: center;
-  color: var(--color-slate-500);
+  color: var(--text-secondary);
 }
 
 .empty-state-icon {
@@ -78,27 +79,27 @@
 }
 
 .text-muted {
-  color: var(--color-slate-500);
+  color: var(--text-secondary);
 }
 
 .text-subtle {
-  color: var(--color-slate-400);
+  color: var(--text-muted);
 }
 
 .text-success {
-  color: var(--color-emerald-600);
+  color: var(--success);
 }
 
 .text-danger {
-  color: var(--color-red-600);
+  color: var(--danger);
 }
 
 .text-warning {
-  color: #d97706;
+  color: var(--warning);
 }
 
 .text-accent {
-  color: var(--color-indigo-600);
+  color: var(--accent);
 }
 
 .mono-xs {
@@ -108,5 +109,5 @@
 
 .table-note {
   font-size: 0.75rem;
-  color: var(--color-slate-400);
+  color: var(--text-muted);
 }

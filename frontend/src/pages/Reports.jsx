@@ -72,6 +72,13 @@ export default function Reports() {
     <DashboardLayout>
       {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} />}
 
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Sales Reports</h1>
+          <p className="page-subtitle">Track revenue, profit, and transactions across your stores.</p>
+        </div>
+      </div>
+
       <div className="panel panel-body report-filters">
         {isOwner && (
           <div className="report-filter-item form-field">
@@ -153,19 +160,19 @@ export default function Reports() {
               <tbody>
                 {sales.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="table-note">No sales records found</td>
+                    <td colSpan={7} className="table-empty">No sales records found for the selected filters</td>
                   </tr>
                 ) : (
                   sales.map((s) => (
                     <tr key={s._id}>
-                      <td className="mono-xs">#{s._id.slice(-8).toUpperCase()}</td>
-                      <td>{s.customerName || 'Walk-in'}</td>
+                      <td className="mono-xs report-sale-id">#{s._id.slice(-8).toUpperCase()}</td>
+                      <td className="table-cell-primary">{s.customerName || 'Walk-in'}</td>
                       <td>
                         {(s.items || []).map((i, idx) => (
-                          <span key={idx} className="block table-note">{i.name} x{i.qty}</span>
+                          <span key={idx} className="report-item-line table-note">{i.name} x{i.qty}</span>
                         ))}
                       </td>
-                      <td className="text-success"><strong>{fmt(s.totalAmount)}</strong></td>
+                      <td className="report-total text-success"><strong>{fmt(s.totalAmount)}</strong></td>
                       <td>
                         <span className={`badge ${s.paymentMethod === 'cash' ? 'badge-success' : 'badge-info'}`}>
                           {s.paymentMethod}
