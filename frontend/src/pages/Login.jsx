@@ -12,9 +12,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState(null); // { message, type }
+  const [alert, setAlert] = useState(null);
 
-  // Already logged in â†’ redirect
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -37,22 +36,19 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FiShield className="text-white" size={28} />
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-brand">
+            <FiShield size={28} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">Inventory Avengers</h1>
-          <p className="text-slate-500 text-sm mt-1">Sign in to your account</p>
+          <h1 className="auth-title">Inventory Avengers</h1>
+          <p className="auth-subtitle">Sign in to your account</p>
         </div>
 
-        {alert && (
-          <Alert message={alert.message} type={alert.type} onClose={clearAlert} />
-        )}
+        {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} />}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="auth-form">
           <div>
             <label className="form-label">Email Address</label>
             <input
@@ -67,45 +63,30 @@ export default function Login() {
           </div>
           <div>
             <label className="form-label">Password</label>
-            <div className="relative">
+            <div className="auth-password-row">
               <input
                 type={showPw ? 'text' : 'password'}
-                className="form-control pr-10"
-                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                className="form-control has-icon"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
               />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                onClick={() => setShowPw((v) => !v)}
-              >
+              <button type="button" className="auth-password-toggle" onClick={() => setShowPw((value) => !value)}>
                 {showPw ? <FiEyeOff size={16} /> : <FiEye size={16} />}
               </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-primary w-full justify-center py-3"
-          >
-            {loading ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <FiLogIn size={16} />
-            )}
+          <button type="submit" disabled={loading} className="btn btn-primary btn-block">
+            {loading ? <span className="loading-spinner size-sm inline-light" /> : <FiLogIn size={16} />}
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
-          Don&apos;t have an account?{' '}
-          <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
-            Register
-          </Link>
+        <p className="auth-footer">
+          Don&apos;t have an account? <Link to="/register" className="auth-link">Register</Link>
         </p>
       </div>
     </div>

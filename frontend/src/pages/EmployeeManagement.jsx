@@ -9,6 +9,7 @@ import { RoleBadge } from '../components/ui/Badge.jsx';
 import { apiGet, apiPut, apiDelete } from '../api/axios.js';
 import useAuthStore from '../store/authStore.js';
 import { fmtDate } from '../utils/helpers.js';
+import '../styles/employee-management.css';
 
 const STATUS_BADGE = {
   approved: 'badge-success',
@@ -38,10 +39,7 @@ export default function EmployeeManagement() {
 
   const loadData = useCallback(async () => {
     try {
-      const [empData, storeData] = await Promise.all([
-        apiGet('/employees'),
-        apiGet('/stores'),
-      ]);
+      const [empData, storeData] = await Promise.all([apiGet('/employees'), apiGet('/stores')]);
       setEmployees(Array.isArray(empData) ? empData : (empData.data || []));
       setStores(Array.isArray(storeData) ? storeData : []);
 
@@ -49,7 +47,9 @@ export default function EmployeeManagement() {
         try {
           const pending = await apiGet('/approvals/pending-users');
           setPendingUsers(Array.isArray(pending) ? pending : (pending.data || []));
-        } catch { /* non-critical */ }
+        } catch {
+          setPendingUsers([]);
+        }
       }
     } catch (err) {
       showAlert(err.response?.data?.message || err.message);
@@ -58,7 +58,9 @@ export default function EmployeeManagement() {
     }
   }, [isOwner, isManager]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAction = async (url, method = 'put', body = {}) => {
     try {
@@ -74,10 +76,7 @@ export default function EmployeeManagement() {
     e.preventDefault();
     setSaving(true);
     try {
-      await apiPut(`/approvals/users/${approveModal._id}/approve`, {
-        role: approveRole,
-        storeId: approveStoreId || undefined,
-      });
+      await apiPut(`/approvals/users/${approveModal._id}/approve`, { role: approveRole, storeId: approveStoreId || undefined });
       showAlert('User approved successfully.', 'success');
       setApproveModal(null);
       await loadData();
@@ -101,32 +100,24 @@ export default function EmployeeManagement() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="page-header">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Employee Management</h2>
-          <p className="text-sm text-slate-500">
-            {isOwner ? 'All employees across stores' : 'Employees in your store'}
-          </p>
+          <h2 className="page-title">Employee Management</h2>
+          <p className="page-subtitle">{isOwner ? 'All employees across stores' : 'Employees in your store'}</p>
         </div>
       </div>
 
-      {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} className="mb-4" />}
+      {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} />}
 
       {loading ? (
         <LoadingSpinner />
       ) : (
         <>
-          {/* ── Pending Approvals Section ── */}
           {(isOwner || isManager) && pendingUsers.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-3">
-                <FiClock size={16} className="text-amber-500" />
-                <h3 className="text-base font-semibold text-slate-700">
-                  Pending Approvals
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
-                    {pendingUsers.length}
-                  </span>
-                </h3>
+            <section className="employee-management-pending">
+              <div className="employee-management-pending-head">
+                <div className="employee-management-pending-title"><FiClock size={16} /> Pending Approvals</div>
+                <span className="employee-management-pending-count">{pendingUsers.length}</span>
               </div>
               <div className="table-wrapper">
                 <table className="table">
@@ -139,23 +130,17 @@ export default function EmployeeManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingUsers.map((u) => (
-                      <tr key={u._id}>
-                        <td className="font-medium text-slate-800">{u.name}</td>
-                        <td className="text-slate-500">{u.email}</td>
-                        <td className="text-slate-500">{fmtDate(u.createdAt)}</td>
+                    {pendingUsers.map((pendingUser) => (
+                      <tr key={pendingUser._id}>
+                        <td className="table-cell-primary">{pendingUser.name}</td>
+                        <td className="text-muted">{pendingUser.email}</td>
+                        <td className="text-muted">{fmtDate(pendingUser.createdAt)}</td>
                         <td>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => { setApproveModal(u); setApproveRole('staff'); setApproveStoreId(''); }}
-                              className="btn btn-success btn-sm"
-                            >
+                          <div className="table-actions">
+                            <button onClick={() => { setApproveModal(pendingUser); setApproveRole('staff'); setApproveStoreId(''); }} className="btn btn-success btn-sm">
                               <FiCheck size={12} /> Approve
                             </button>
-                            <button
-                              onClick={() => handleReject(u._id)}
-                              className="btn btn-danger btn-sm"
-                            >
+                            <button onClick={() => handleReject(pendingUser._id)} className="btn btn-danger btn-sm">
                               <FiX size={12} /> Reject
                             </button>
                           </div>
@@ -165,14 +150,13 @@ export default function EmployeeManagement() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </section>
           )}
 
-          {/* ── Active Employees ── */}
           {employees.length === 0 ? (
-            <div className="card p-12 text-center">
-              <FiUsers size={40} className="text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-500">No employees found.</p>
+            <div className="panel empty-state employee-empty-state">
+              <FiUsers size={40} className="empty-state-icon" />
+              <p>No employees found.</p>
             </div>
           ) : (
             <div className="table-wrapper">
@@ -188,41 +172,39 @@ export default function EmployeeManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((emp) => (
-                    <tr key={emp._id}>
-                      <td className="font-medium text-slate-800">{emp.name}</td>
-                      <td className="text-slate-500">{emp.email}</td>
-                      <td><RoleBadge role={emp.role} /></td>
-                      <td className="text-slate-500">{emp.storeId?.name || '—'}</td>
+                  {employees.map((employee) => (
+                    <tr key={employee._id}>
+                      <td className="table-cell-primary">{employee.name}</td>
+                      <td className="text-muted">{employee.email}</td>
+                      <td><RoleBadge role={employee.role} /></td>
+                      <td className="text-muted">{employee.storeId?.name || '�'}</td>
+                      <td><span className={`badge ${STATUS_BADGE[employee.status] || 'badge-gray'}`}>{employee.status}</span></td>
                       <td>
-                        <span className={`badge ${STATUS_BADGE[emp.status] || 'badge-gray'}`}>
-                          {emp.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-1 flex-wrap">
-                          <Link to={`/employees/${emp._id}`} className="btn btn-outline btn-sm" title="View profile">
+                        <div className="employee-actions">
+                          <Link to={`/employees/${employee._id}`} className="btn btn-outline btn-sm" title="View profile">
                             <FiEye size={12} />
                           </Link>
-                          {emp.role === 'staff' && isOwner && (
-                            <button onClick={() => handleAction(`/employees/${emp._id}/promote`)} className="btn btn-success btn-sm" title="Promote to manager">
+                          {employee.role === 'staff' && isOwner && (
+                            <button onClick={() => handleAction(`/employees/${employee._id}/promote`)} className="btn btn-success btn-sm" title="Promote to manager">
                               <FiArrowUp size={12} />
                             </button>
                           )}
-                          {emp.role === 'manager' && isOwner && (
-                            <button onClick={() => handleAction(`/employees/${emp._id}/demote`)} className="btn btn-warning btn-sm" title="Demote to staff">
+                          {employee.role === 'manager' && isOwner && (
+                            <button onClick={() => handleAction(`/employees/${employee._id}/demote`)} className="btn btn-warning btn-sm" title="Demote to staff">
                               <FiArrowDown size={12} />
                             </button>
                           )}
                           {isOwner && (
                             <>
-                              {emp.status !== 'suspended' && (
-                                <button onClick={() => handleAction(`/employees/${emp._id}/suspend`)} className="btn btn-warning btn-sm" title="Suspend">
+                              {employee.status !== 'suspended' && (
+                                <button onClick={() => handleAction(`/employees/${employee._id}/suspend`)} className="btn btn-warning btn-sm" title="Suspend">
                                   <FiSlash size={12} />
                                 </button>
                               )}
                               <button
-                                onClick={() => { if (window.confirm(`Remove employee "${emp.name}"?`)) handleAction(`/employees/${emp._id}`, 'delete'); }}
+                                onClick={() => {
+                                  if (window.confirm(`Remove employee "${employee.name}"?`)) handleAction(`/employees/${employee._id}`, 'delete');
+                                }}
                                 className="btn btn-danger btn-sm"
                                 title="Remove"
                               >
@@ -241,10 +223,9 @@ export default function EmployeeManagement() {
         </>
       )}
 
-      {/* Approve Modal */}
       {approveModal && (
-        <Modal isOpen={true} onClose={() => setApproveModal(null)} title={`Approve ${approveModal.name}`}>
-          <form onSubmit={handleApprove} className="flex flex-col gap-4">
+        <Modal isOpen onClose={() => setApproveModal(null)} title={`Approve ${approveModal.name}`}>
+          <form onSubmit={handleApprove} className="stack-lg">
             <div>
               <label className="form-label">Assign Role</label>
               <select className="form-control" value={approveRole} onChange={(e) => setApproveRole(e.target.value)}>
@@ -256,12 +237,12 @@ export default function EmployeeManagement() {
               <div>
                 <label className="form-label">Assign Store</label>
                 <select className="form-control" value={approveStoreId} onChange={(e) => setApproveStoreId(e.target.value)}>
-                  <option value="">— Select a store —</option>
-                  {stores.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
+                  <option value="">� Select a store �</option>
+                  {stores.map((store) => <option key={store._id} value={store._id}>{store.name}</option>)}
                 </select>
               </div>
             )}
-            <div className="flex gap-2 justify-end">
+            <div className="modal-footer-actions modal-footer-actions--soft">
               <button type="button" className="btn btn-secondary" onClick={() => setApproveModal(null)}>Cancel</button>
               <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Approving...' : 'Approve'}</button>
             </div>

@@ -4,14 +4,9 @@ import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import Alert from '../components/ui/Alert.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { apiGet, apiPost } from '../api/axios.js';
-import { fmtDate } from '../utils/helpers.js';
-import useAuthStore from '../store/authStore.js';
-import { formatCurrency } from '../utils/currency.js';
+import { fmt, fmtDate } from '../utils/helpers.js';
 
 export default function Returns() {
-  const user = useAuthStore((s) => s.user);
-  const currency = user?.currency || 'INR';
-  const fmt = (v) => formatCurrency(v, currency);
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
@@ -19,8 +14,6 @@ export default function Returns() {
   const [selectedSale, setSelectedSale] = useState(null);
   const [lookingUp, setLookingUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  // Return form state
   const [returnProductId, setReturnProductId] = useState('');
   const [returnQty, setReturnQty] = useState(1);
   const [returnReason, setReturnReason] = useState('defective');
@@ -40,12 +33,13 @@ export default function Returns() {
     }
   }, []);
 
-  useEffect(() => { loadReturns(); }, [loadReturns]);
+  useEffect(() => {
+    loadReturns();
+  }, [loadReturns]);
 
-  // Auto-calculate refund when product/qty changes
   useEffect(() => {
     if (!selectedSale || !returnProductId) return;
-    const item = selectedSale.items.find((i) => i.productId === returnProductId || i.productId?._id === returnProductId);
+    const item = selectedSale.items.find((entry) => entry.productId === returnProductId || entry.productId?._id === returnProductId);
     if (item) {
       setRefundAmount((item.price * returnQty).toFixed(2));
     }
@@ -57,12 +51,9 @@ export default function Returns() {
     setLookingUp(true);
     try {
       const sales = await apiGet('/sales');
-      const found = sales.find(
-        (s) => s._id === id || s._id.slice(-8).toUpperCase() === id.toUpperCase()
-      );
+      const found = sales.find((sale) => sale._id === id || sale._id.slice(-8).toUpperCase() === id.toUpperCase());
       if (!found) return showAlert('Sale not found. Check the ID and try again.');
       setSelectedSale(found);
-      // Set default product
       if (found.items?.length) {
         const firstItem = found.items[0];
         setReturnProductId(firstItem.productId?._id || firstItem.productId || '');
@@ -87,7 +78,7 @@ export default function Returns() {
         reason: returnReason,
         refundAmount: parseFloat(refundAmount),
       });
-      showAlert('Return processed successfully. ' + (returnReason === 'defective' ? 'Item NOT restocked (Defective).' : 'Stock has been restocked.'), 'success');
+      showAlert('Return processed successfully. Stock has been restocked.', 'success');
       setSelectedSale(null);
       setSaleIdInput('');
       setReturnProductId('');
@@ -105,25 +96,21 @@ export default function Returns() {
     <DashboardLayout>
       {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} />}
 
-      <div className="grid lg:grid-cols-3 gap-5">
-        {/* Return Form */}
-        <div className="card p-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-5 flex items-center gap-2">
-            <FiRotateCcw size={16} /> Process Return
-          </h2>
+      <div className="returns-layout">
+        <div className="panel panel-body">
+          <h2 className="returns-panel-title"><FiRotateCcw size={16} /> Process Return</h2>
 
-          {/* Sale lookup */}
-          <div className="mb-5">
+          <div className="returns-lookup">
             <label className="form-label">Sale ID</label>
-            <div className="flex gap-2">
+            <div className="inline-actions">
               <input
-                className="form-control flex-1"
+                className="form-control"
                 placeholder="Full ID or last 8 chars"
                 value={saleIdInput}
                 onChange={(e) => setSaleIdInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupSale(); } }}
               />
-              <button onClick={lookupSale} disabled={lookingUp} className="btn btn-outline shrink-0">
+              <button onClick={lookupSale} disabled={lookingUp} className="btn btn-outline">
                 <FiSearch size={14} />
                 {lookingUp ? '...' : 'Lookup'}
               </button>
@@ -131,33 +118,21 @@ export default function Returns() {
           </div>
 
           {selectedSale && (
-            <div className="mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100 text-sm">
-              <strong>Sale #{selectedSale._id.slice(-8).toUpperCase()}</strong> —{' '}
-              {selectedSale.customerName || 'Walk-in'} —{' '}
-              {fmt(selectedSale.totalAmount)} ({selectedSale.paymentMethod})
+            <div className="returns-sale-banner">
+              <strong>Sale #{selectedSale._id.slice(-8).toUpperCase()}</strong> - {selectedSale.customerName || 'Walk-in'} - {fmt(selectedSale.totalAmount)} ({selectedSale.paymentMethod})
             </div>
           )}
 
-          <form onSubmit={handleReturnSubmit} className="space-y-4">
+          <form onSubmit={handleReturnSubmit} className="stack-lg">
             <div>
               <label className="form-label">Product</label>
-              <select
-                className="form-control"
-                value={returnProductId}
-                onChange={(e) => setReturnProductId(e.target.value)}
-                disabled={!selectedSale}
-                required
-              >
+              <select className="form-control" value={returnProductId} onChange={(e) => setReturnProductId(e.target.value)} disabled={!selectedSale} required>
                 {!selectedSale ? (
                   <option value="">-- Look up sale first --</option>
                 ) : (
                   selectedSale.items.map((item) => {
                     const pid = item.productId?._id || item.productId;
-                    return (
-                      <option key={pid} value={pid}>
-                        {item.name} ({item.qty} × {fmt(item.price)})
-                      </option>
-                    );
+                    return <option key={pid} value={pid}>{item.name} ({item.qty} x {fmt(item.price)})</option>;
                   })
                 )}
               </select>
@@ -165,58 +140,35 @@ export default function Returns() {
 
             <div>
               <label className="form-label">Quantity</label>
-              <input
-                type="number"
-                min="1"
-                className="form-control"
-                value={returnQty}
-                onChange={(e) => setReturnQty(parseInt(e.target.value) || 1)}
-                required
-              />
+              <input type="number" min="1" className="form-control" value={returnQty} onChange={(e) => setReturnQty(parseInt(e.target.value, 10) || 1)} required />
             </div>
 
             <div>
               <label className="form-label">Reason</label>
-              <select
-                className="form-control"
-                value={returnReason}
-                onChange={(e) => setReturnReason(e.target.value)}
-                required
-              >
-                <option value="defective">Defective (not restocked)</option>
-                <option value="wrong_item">Wrong Item (restocked)</option>
-                <option value="others">Others (restocked)</option>
+              <select className="form-control" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} required>
+                <option value="defective">Defective</option>
+                <option value="wrong_item">Wrong Item</option>
+                <option value="not_needed">Not Needed</option>
+                <option value="damaged">Damaged</option>
+                <option value="other">Other</option>
               </select>
             </div>
 
             <div>
               <label className="form-label">Refund Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="form-control"
-                value={refundAmount}
-                onChange={(e) => setRefundAmount(e.target.value)}
-                required
-              />
+              <input type="number" step="0.01" min="0" className="form-control" value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} required />
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting || !selectedSale}
-              className="btn btn-primary w-full justify-center"
-            >
-              {submitting && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            <button type="submit" disabled={submitting || !selectedSale} className="btn btn-primary btn-block">
+              {submitting && <span className="loading-spinner size-sm inline-light" />}
               {submitting ? 'Processing...' : 'Process Return'}
             </button>
           </form>
         </div>
 
-        {/* Returns History */}
-        <div className="lg:col-span-2 card overflow-hidden">
-          <div className="p-4 border-b border-slate-100">
-            <h2 className="text-base font-semibold text-slate-800">Returns History</h2>
+        <div className="panel">
+          <div className="panel-header">
+            <h2 className="panel-title">Returns History</h2>
           </div>
           {loading ? (
             <LoadingSpinner text="Loading returns..." />
@@ -238,21 +190,19 @@ export default function Returns() {
                 <tbody>
                   {returns.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-10 text-slate-400">No returns recorded</td>
+                      <td colSpan={8} className="table-empty">No returns recorded</td>
                     </tr>
                   ) : (
-                    returns.map((r) => (
-                      <tr key={r._id}>
-                        <td className="font-mono text-xs text-slate-400">#{r._id.slice(-8).toUpperCase()}</td>
-                        <td className="font-mono text-xs text-slate-400">
-                          #{(r.saleId?._id || r.saleId || '').toString().slice(-8).toUpperCase()}
-                        </td>
-                        <td className="font-medium">{r.productId?.name || 'N/A'}</td>
-                        <td>{r.quantity}</td>
-                        <td><span className="badge badge-warning">{r.reason}</span></td>
-                        <td className="font-semibold text-red-600">{fmt(r.refundAmount)}</td>
-                        <td>{r.processedBy?.name || 'N/A'}</td>
-                        <td className="text-slate-400 text-xs">{fmtDate(r.createdAt)}</td>
+                    returns.map((item) => (
+                      <tr key={item._id}>
+                        <td className="mono-xs text-subtle">#{item._id.slice(-8).toUpperCase()}</td>
+                        <td className="mono-xs text-subtle">#{(item.saleId?._id || item.saleId || '').toString().slice(-8).toUpperCase()}</td>
+                        <td className="table-cell-primary">{item.productId?.name || 'N/A'}</td>
+                        <td>{item.quantity}</td>
+                        <td><span className="badge badge-warning">{item.reason}</span></td>
+                        <td className="table-cell-primary text-danger">{fmt(item.refundAmount)}</td>
+                        <td>{item.processedBy?.name || 'N/A'}</td>
+                        <td className="table-note">{fmtDate(item.createdAt)}</td>
                       </tr>
                     ))
                   )}

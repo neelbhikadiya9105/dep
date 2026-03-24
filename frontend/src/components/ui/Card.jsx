@@ -1,17 +1,11 @@
-export default function Card({ title, value, icon, colorClass = 'text-indigo-600', bgClass = 'bg-indigo-50', children }) {
+export default function Card({ title, value, icon, tone = 'tone-indigo', children }) {
   return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-medium text-slate-500">{title}</span>
-        {icon && (
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${bgClass}`}>
-            <span className={colorClass}>{icon}</span>
-          </div>
-        )}
+    <div className="stat-card">
+      <div className="stat-card-header">
+        <span className="stat-card-title">{title}</span>
+        {icon && <div className={`stat-card-icon ${tone}`}>{icon}</div>}
       </div>
-      {value !== undefined && (
-        <div className="text-2xl font-bold text-slate-800">{value}</div>
-      )}
+      {value !== undefined && <div className="stat-card-value">{value}</div>}
       {children}
     </div>
   );

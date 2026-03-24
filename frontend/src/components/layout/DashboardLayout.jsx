@@ -3,11 +3,11 @@ import Topbar from './Topbar.jsx';
 
 export default function DashboardLayout({ children }) {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-base)' }}>
+    <div className="app-shell">
       <Sidebar />
       <Topbar />
-      <main className="ml-[250px] pt-[60px] min-h-screen">
-        <div className="p-6">{children}</div>
+      <main className="app-main">
+        <div className="app-content">{children}</div>
       </main>
     </div>
   );

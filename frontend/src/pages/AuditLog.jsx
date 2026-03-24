@@ -45,42 +45,39 @@ export default function AuditLog() {
     }
   }, [page]);
 
-  useEffect(() => { loadLogs(); }, [loadLogs]);
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
   const filtered = filter
-    ? logs.filter((l) =>
-        l.action?.includes(filter) ||
-        l.actorId?.name?.toLowerCase().includes(filter.toLowerCase()) ||
-        l.targetId?.name?.toLowerCase().includes(filter.toLowerCase())
-      )
+    ? logs.filter((log) =>
+      log.action?.includes(filter) ||
+      log.actorId?.name?.toLowerCase().includes(filter.toLowerCase()) ||
+      log.targetId?.name?.toLowerCase().includes(filter.toLowerCase())
+    )
     : logs;
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="page-header">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Audit Log</h2>
-          <p className="text-sm text-slate-500">Track significant system actions</p>
+          <h2 className="page-title">Audit Log</h2>
+          <p className="page-subtitle">Track significant system actions</p>
         </div>
       </div>
 
-      {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} className="mb-4" />}
+      {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} />}
 
-      <div className="mb-4">
-        <input
-          className="form-control max-w-xs"
-          placeholder="Filter by action or user..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
+      <div className="audit-toolbar">
+        <input className="form-control audit-filter-input" placeholder="Filter by action or user..." value={filter} onChange={(e) => setFilter(e.target.value)} />
       </div>
 
       {loading ? (
         <LoadingSpinner />
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center">
-          <FiActivity size={40} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500">No audit log entries found.</p>
+        <div className="panel empty-state audit-empty-state">
+          <FiActivity size={40} className="empty-state-icon" />
+          <p>No audit log entries found.</p>
         </div>
       ) : (
         <>
@@ -98,29 +95,25 @@ export default function AuditLog() {
               <tbody>
                 {filtered.map((log) => (
                   <tr key={log._id}>
-                    <td className="text-xs text-slate-400 whitespace-nowrap">{fmtDate(log.createdAt)}</td>
+                    <td className="table-note audit-timestamp">{fmtDate(log.createdAt)}</td>
                     <td>
                       {log.actorId ? (
-                        <div>
-                          <div className="font-medium text-slate-800 text-xs">{log.actorId.name}</div>
-                          <div className="text-slate-400 text-xs">{log.actorId.email}</div>
+                        <div className="table-cell-stack">
+                          <div className="table-cell-primary table-cell-primary--compact">{log.actorId.name}</div>
+                          <div className="table-cell-secondary">{log.actorId.email}</div>
                         </div>
-                      ) : 'â€”'}
+                      ) : '—'}
                     </td>
-                    <td>
-                      <span className="badge badge-info text-xs">
-                        {ACTION_LABELS[log.action] || log.action}
-                      </span>
-                    </td>
+                    <td><span className="badge badge-info">{ACTION_LABELS[log.action] || log.action}</span></td>
                     <td>
                       {log.targetId ? (
-                        <div>
-                          <div className="font-medium text-slate-700 text-xs">{log.targetId.name}</div>
-                          <div className="text-slate-400 text-xs">{log.targetId.email}</div>
+                        <div className="table-cell-stack">
+                          <div className="table-cell-primary table-cell-primary--compact">{log.targetId.name}</div>
+                          <div className="table-cell-secondary">{log.targetId.email}</div>
                         </div>
-                      ) : 'â€”'}
+                      ) : '—'}
                     </td>
-                    <td className="text-slate-500 text-xs">{log.storeId?.name || 'â€”'}</td>
+                    <td className="table-note">{log.storeId?.name || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -128,20 +121,12 @@ export default function AuditLog() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 mt-4">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="btn btn-outline btn-sm"
-              >
+            <div className="pagination-row">
+              <button onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="btn btn-outline btn-sm">
                 <FiChevronLeft size={14} />
               </button>
-              <span className="text-sm text-slate-600">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="btn btn-outline btn-sm"
-              >
+              <span className="pagination-copy">Page {page} of {totalPages}</span>
+              <button onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages} className="btn btn-outline btn-sm">
                 <FiChevronRight size={14} />
               </button>
             </div>

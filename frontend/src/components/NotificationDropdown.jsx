@@ -25,7 +25,6 @@ export default function NotificationDropdown() {
     return () => clearInterval(interval);
   }, [loadNotifications]);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) {
@@ -39,9 +38,7 @@ export default function NotificationDropdown() {
   const markRead = async (id) => {
     try {
       await apiPut(`/notifications/${id}/read`);
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, read: true } : n))
-      );
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
       setUnreadCount((c) => Math.max(0, c - 1));
     } catch {
       // non-blocking
@@ -59,57 +56,50 @@ export default function NotificationDropdown() {
   };
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="dropdown" ref={ref}>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
+        className="dropdown-trigger"
         aria-label="Notifications"
       >
         <FiBell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
+          <span className="dropdown-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-100 rounded-xl shadow-lg z-50">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-            <span className="font-semibold text-slate-800 text-sm">Notifications</span>
+        <div className="dropdown-panel">
+          <div className="dropdown-panel-header">
+            <span className="dropdown-panel-title">Notifications</span>
             {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                className="text-xs text-indigo-600 hover:text-indigo-700"
-              >
+              <button type="button" onClick={markAllRead} className="dropdown-panel-link">
                 Mark all read
               </button>
             )}
           </div>
 
-          <div className="max-h-72 overflow-y-auto">
+          <div className="dropdown-list">
             {notifications.length === 0 ? (
-              <p className="text-center text-slate-400 text-sm py-8">No notifications</p>
+              <p className="dropdown-empty">No notifications</p>
             ) : (
               notifications.map((n) => (
-                <div
+                <button
+                  type="button"
                   key={n._id}
                   onClick={() => !n.read && markRead(n._id)}
-                  className={`px-4 py-3 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-all ${
-                    !n.read ? 'bg-indigo-50/50' : ''
-                  }`}
+                  className={`dropdown-item${!n.read ? ' is-unread' : ''}`}
                 >
-                  <div className="flex items-start gap-2">
-                    {!n.read && (
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 mt-1 shrink-0" />
-                    )}
-                    <div className={!n.read ? '' : 'ml-4'}>
-                      <p className="text-sm font-medium text-slate-800">{n.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{n.message}</p>
-                      <p className="text-xs text-slate-400 mt-1">{fmtDate(n.createdAt)}</p>
+                  <div className="dropdown-item-row">
+                    {!n.read && <span className="dropdown-item-dot" />}
+                    <div className={`dropdown-item-content${n.read ? ' is-read' : ''}`}>
+                      <p className="dropdown-item-title">{n.title}</p>
+                      <p className="dropdown-item-message">{n.message}</p>
+                      <p className="dropdown-item-time">{fmtDate(n.createdAt)}</p>
                     </div>
                   </div>
-                </div>
+                </button>
               ))
             )}
           </div>

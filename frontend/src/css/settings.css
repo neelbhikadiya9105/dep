@@ -216,3 +216,10 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+.settings-theme-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem; }
+.settings-theme-switch { position: relative; display: inline-flex; align-items: center; width: 44px; height: 24px; border-radius: 9999px; background: #e2e8f0; transition: background-color 0.15s; }
+.settings-theme-switch.is-dark { background: #4f46e5; }
+.settings-theme-thumb { display: inline-block; width: 16px; height: 16px; margin-left: 4px; border-radius: 9999px; background: #fff; transition: transform 0.15s; }
+.settings-theme-thumb.is-dark { transform: translateX(20px); }
+.settings-theme-label { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; color: #334155; }

@@ -1,0 +1,32 @@
+.employee-management-pending {
+  margin-bottom: 2rem;
+}
+
+.employee-management-pending-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.employee-management-pending-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-slate-700);
+}
+
+.employee-management-pending-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--color-amber-100);
+  color: var(--color-amber-700);
+  font-size: 0.75rem;
+  font-weight: 700;
+}

@@ -1,0 +1,125 @@
+.support-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-slate-100);
+}
+
+.support-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: -1px;
+  padding: 0.6rem 1rem;
+  border-bottom: 2px solid transparent;
+  color: var(--color-slate-500);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.support-tab:hover {
+  color: var(--color-slate-700);
+}
+
+.support-tab.is-active {
+  color: var(--color-indigo-600);
+  border-color: var(--color-indigo-600);
+}
+
+.support-message-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.support-message-card {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.support-message-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.support-message-card.is-unread {
+  border-left: 4px solid var(--color-indigo-500);
+}
+
+.support-message-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.support-message-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.support-message-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.support-message-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--color-indigo-500);
+}
+
+.support-message-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-slate-800);
+}
+
+.support-message-meta {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-slate-500);
+}
+
+.support-message-body {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-slate-600);
+}
+
+.support-compose-panel {
+  max-width: 42rem;
+}
+
+.support-compose-input {
+  resize: vertical;
+}
+
+.support-reply-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-slate-200);
+  border-radius: var(--radius-lg);
+  background: var(--color-slate-50);
+  color: var(--color-slate-600);
+  font-size: 0.875rem;
+}
+
+.support-reply-close {
+  color: var(--color-slate-400);
+}
+
+.support-reply-close:hover {
+  color: var(--color-red-500);
+}
+
+.support-empty {
+  padding: 3rem 1rem;
+}

@@ -1,0 +1,64 @@
+.employee-profile-section {
+  margin-top: 1.5rem;
+}
+
+.employee-profile-card {
+  max-width: 32rem;
+}
+
+.employee-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.employee-profile-avatar {
+  width: 4rem;
+  height: 4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--color-indigo-600);
+  color: var(--color-white);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.employee-profile-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-slate-800);
+}
+
+.employee-profile-email {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-slate-500);
+}
+
+.employee-profile-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.employee-profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-slate-100);
+}
+
+.employee-profile-label {
+  font-size: 0.875rem;
+  color: var(--color-slate-500);
+}
+
+.employee-profile-value {
+  font-size: 0.875rem;
+  color: var(--color-slate-700);
+}

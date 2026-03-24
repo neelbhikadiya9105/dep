@@ -39,7 +39,7 @@ export default function OwnerStores() {
     try {
       const data = await apiGet('/employees');
       const list = Array.isArray(data) ? data : (data.data || []);
-      setManagers(list.filter((u) => u.role === 'manager'));
+      setManagers(list.filter((user) => user.role === 'manager'));
     } catch {
       setManagers([]);
     }
@@ -122,59 +122,53 @@ export default function OwnerStores() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="page-header">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Stores</h2>
-          <p className="text-sm text-slate-500">Manage all store locations</p>
+          <h2 className="page-title">Stores</h2>
+          <p className="page-subtitle">Manage all store locations</p>
         </div>
         <button onClick={openCreate} className="btn btn-primary">
           <FiPlus size={15} /> New Store
         </button>
       </div>
 
-      {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} className="mb-4" />}
+      {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} />}
 
       {loading ? (
         <LoadingSpinner />
       ) : stores.length === 0 ? (
-        <div className="card p-12 text-center">
-          <FiMapPin size={40} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500">No stores yet. Create your first store.</p>
+        <div className="panel empty-state owner-stores-empty">
+          <FiMapPin size={40} className="empty-state-icon" />
+          <p>No stores yet. Create your first store.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="owner-stores-grid">
           {stores.map((store) => (
-            <div key={store._id} className="card p-5">
-              <div className="flex items-start justify-between mb-3">
+            <div key={store._id} className="panel panel-body owner-store-card">
+              <div className="owner-store-card-head">
                 <div>
-                  <h3 className="font-semibold text-slate-800">{store.name}</h3>
-                  <span className="badge badge-info text-xs">{store.code}</span>
+                  <h3 className="owner-store-name">{store.name}</h3>
+                  <span className="badge badge-info">{store.code}</span>
                 </div>
                 <span className={`badge ${store.status === 'inactive' ? 'badge-danger' : 'badge-success'}`}>
                   {store.status || 'active'}
                 </span>
               </div>
 
-              {store.address && (
-                <p className="text-xs text-slate-500 mb-1">{store.address}</p>
-              )}
-              {store.phone && (
-                <p className="text-xs text-slate-500 mb-1">{store.phone}</p>
-              )}
-              {store.email && (
-                <p className="text-xs text-slate-500 mb-3">{store.email}</p>
-              )}
+              {store.address && <p className="owner-store-meta">{store.address}</p>}
+              {store.phone && <p className="owner-store-meta">{store.phone}</p>}
+              {store.email && <p className="owner-store-meta owner-store-meta--spaced">{store.email}</p>}
 
-              <div className="flex items-center gap-1 text-xs text-slate-500 mb-4">
+              <div className="owner-store-manager">
                 <FiUser size={12} />
                 {store.managerId ? (
                   <span>{store.managerId.name}</span>
                 ) : (
-                  <span className="text-slate-400 italic">No manager assigned</span>
+                  <span className="owner-store-manager-empty">No manager assigned</span>
                 )}
               </div>
 
-              <div className="flex gap-2 flex-wrap">
+              <div className="owner-store-actions">
                 <button onClick={() => openEdit(store)} className="btn btn-outline btn-sm">
                   <FiEdit2 size={12} /> Edit
                 </button>
@@ -190,22 +184,16 @@ export default function OwnerStores() {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editStore ? 'Edit Store' : 'New Store'}>
-        <form onSubmit={handleSave} className="space-y-4">
+        <form onSubmit={handleSave} className="stack-lg">
           <div>
             <label className="form-label">Store Name *</label>
-            <input
-              className="form-control"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-            />
+            <input className="form-control" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
           <div>
             <label className="form-label">Store Code *</label>
             <input
-              className="form-control uppercase"
+              className="form-control"
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
               placeholder="e.g. MAIN, NYC01"
@@ -215,68 +203,40 @@ export default function OwnerStores() {
           </div>
           <div>
             <label className="form-label">Address</label>
-            <input
-              className="form-control"
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-            />
+            <input className="form-control" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="form-grid form-grid--two form-grid--compact">
             <div>
               <label className="form-label">Phone</label>
-              <input
-                className="form-control"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              />
+              <input className="form-control" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
             <div>
               <label className="form-label">Email</label>
-              <input
-                type="email"
-                className="form-control"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
+              <input type="email" className="form-control" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
           </div>
-          <div className="flex gap-3 justify-end pt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="btn btn-outline">
-              Cancel
-            </button>
-            <button type="submit" disabled={saving} className="btn btn-primary">
-              {saving ? 'Saving...' : editStore ? 'Update' : 'Create'}
-            </button>
+          <div className="modal-footer-actions modal-footer-actions--soft">
+            <button type="button" onClick={() => setShowModal(false)} className="btn btn-outline">Cancel</button>
+            <button type="submit" disabled={saving} className="btn btn-primary">{saving ? 'Saving...' : editStore ? 'Update' : 'Create'}</button>
           </div>
         </form>
       </Modal>
 
-      {/* Assign Manager Modal */}
       <Modal isOpen={showManagerModal} onClose={() => setShowManagerModal(false)} title="Assign Manager">
-        <form onSubmit={handleAssignManager} className="space-y-4">
-          <p className="text-sm text-slate-600">
-            Assign a manager to <strong>{managerStore?.name}</strong>
-          </p>
+        <form onSubmit={handleAssignManager} className="stack-lg">
+          <p className="modal-support-copy">Assign a manager to <strong>{managerStore?.name}</strong></p>
           <div>
             <label className="form-label">Manager</label>
-            <select
-              className="form-control"
-              value={selectedManagerId}
-              onChange={(e) => setSelectedManagerId(e.target.value)}
-            >
+            <select className="form-control" value={selectedManagerId} onChange={(e) => setSelectedManagerId(e.target.value)}>
               <option value="">-- No Manager --</option>
-              {managers.map((m) => (
-                <option key={m._id} value={m._id}>{m.name} ({m.email})</option>
+              {managers.map((manager) => (
+                <option key={manager._id} value={manager._id}>{manager.name} ({manager.email})</option>
               ))}
             </select>
           </div>
-          <div className="flex gap-3 justify-end pt-2">
-            <button type="button" onClick={() => setShowManagerModal(false)} className="btn btn-outline">
-              Cancel
-            </button>
-            <button type="submit" disabled={saving} className="btn btn-primary">
-              {saving ? 'Saving...' : 'Assign'}
-            </button>
+          <div className="modal-footer-actions modal-footer-actions--soft">
+            <button type="button" onClick={() => setShowManagerModal(false)} className="btn btn-outline">Cancel</button>
+            <button type="submit" disabled={saving} className="btn btn-primary">{saving ? 'Saving...' : 'Assign'}</button>
           </div>
         </form>
       </Modal>

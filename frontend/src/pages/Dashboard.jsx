@@ -11,57 +11,70 @@ import DashboardLayout from '../components/layout/DashboardLayout.jsx';
 import Card from '../components/ui/Card.jsx';
 import { apiGet } from '../api/axios.js';
 import useAuthStore from '../store/authStore.js';
-import { fmtShortDate, getLast7Days, getDayKey } from '../utils/helpers.js';
-import { formatCurrency } from '../utils/currency.js';
+import { fmt, fmtShortDate, getLast7Days, getDayKey } from '../utils/helpers.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export default function Dashboard() {
   const user = useAuthStore((s) => s.user);
-  const currency = user?.currency || 'INR';
-  const fmt = (v) => formatCurrency(v, currency);
-
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
   const [dashStats, setDashStats] = useState(null);
+  const [selectedStoreId, setSelectedStoreId] = useState(() => localStorage.getItem('selectedStoreId') || '');
   const [loading, setLoading] = useState(true);
+
+  const getStoreId = useCallback(() => {
+    if (!user) return '';
+    if (user.role !== 'owner') return user.storeId || '';
+    return selectedStoreId;
+  }, [user, selectedStoreId]);
+
+  useEffect(() => {
+    if (user?.role === 'owner') {
+      apiGet('/stores').then((data) => setStores(Array.isArray(data) ? data : (data.data || []))).catch(() => {});
+    }
+  }, [user]);
 
   useEffect(() => {
     setLoading(true);
+    const storeId = getStoreId();
+    const q = storeId ? `?storeId=${storeId}` : '';
     Promise.all([
-      apiGet('/reports/sales'),
-      apiGet('/products'),
-      apiGet('/reports/dashboard'),
+      apiGet(`/reports/sales${q}`),
+      apiGet(`/products${q}`),
+      apiGet(`/reports/dashboard${q}`),
     ]).then(([reportData, prods, stats]) => {
       setSales(reportData.sales || []);
       setProducts(Array.isArray(prods) ? prods : (prods.data || []));
       setDashStats(stats);
     }).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  }, [getStoreId]);
 
-  // KPIs
+  const handleStoreChange = (e) => {
+    const value = e.target.value;
+    setSelectedStoreId(value);
+    localStorage.setItem('selectedStoreId', value);
+  };
+
   const today = new Date().toDateString();
-  const todaySales = sales.filter((s) => new Date(s.createdAt).toDateString() === today);
-  const todayRevenue = todaySales.reduce(
-    (sum, s) => sum + s.totalAmount - (s.returnedAmount || 0),
-    0
-  );
-  const lowCount = products.filter((p) => p.quantity <= p.threshold).length;
+  const todaySales = sales.filter((sale) => new Date(sale.createdAt).toDateString() === today);
+  const todayRevenue = todaySales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+  const lowCount = products.filter((product) => product.quantity <= product.threshold).length;
 
-  // Chart
   const days = getLast7Days();
   const labels = days.map(getDayKey);
-  const revenueMap = Object.fromEntries(labels.map((l) => [l, 0]));
-  sales.forEach((s) => {
-    const key = getDayKey(s.createdAt);
-    if (revenueMap[key] !== undefined) revenueMap[key] += (s.totalAmount - (s.returnedAmount || 0));
+  const revenueMap = Object.fromEntries(labels.map((label) => [label, 0]));
+  sales.forEach((sale) => {
+    const key = getDayKey(sale.createdAt);
+    if (revenueMap[key] !== undefined) revenueMap[key] += sale.totalAmount;
   });
 
   const chartData = {
     labels,
     datasets: [{
-      label: `Revenue (${currency})`,
-      data: labels.map((l) => revenueMap[l]),
+      label: 'Revenue ($)',
+      data: labels.map((label) => revenueMap[label]),
       fill: true,
       backgroundColor: 'rgba(79,70,229,0.08)',
       borderColor: '#4f46e5',
@@ -76,18 +89,17 @@ export default function Dashboard() {
     responsive: true,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' ' + fmt(c.parsed.y) } },
+      tooltip: { callbacks: { label: (context) => ` $${context.parsed.y.toFixed(2)}` } },
     },
     scales: {
-      y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: (v) => fmt(v) } },
+      y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: (value) => `$${value}` } },
       x: { grid: { display: false } },
     },
   };
 
-  // Top products
   const productMap = {};
-  sales.forEach((s) => {
-    s.items?.forEach((item) => {
+  sales.forEach((sale) => {
+    sale.items?.forEach((item) => {
       if (!productMap[item.name]) productMap[item.name] = { qty: 0, revenue: 0 };
       productMap[item.name].qty += item.qty;
       productMap[item.name].revenue += item.price * item.qty;
@@ -97,73 +109,61 @@ export default function Dashboard() {
     .sort((a, b) => b[1].revenue - a[1].revenue)
     .slice(0, 5);
 
-  const lowStockProducts = products.filter((p) => p.quantity <= p.threshold).slice(0, 8);
+  const lowStockProducts = products.filter((product) => product.quantity <= product.threshold).slice(0, 8);
   const recentSales = sales.slice(0, 10);
 
   return (
     <DashboardLayout>
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card
-          title="Today's Revenue"
-          value={fmt(todayRevenue)}
-          icon={<FiDollarSign size={18} />}
-          colorClass="text-indigo-600"
-          bgClass="bg-indigo-50"
-        >
-          <p className="text-xs text-slate-400 mt-1">Net of returns</p>
-        </Card>
-        <Card
-          title="Today's Orders"
-          value={todaySales.length}
-          icon={<FiShoppingBag size={18} />}
-          colorClass="text-emerald-600"
-          bgClass="bg-emerald-50"
-        />
-        <Card
-          title="Total Products"
-          value={products.length}
-          icon={<FiPackage size={18} />}
-          colorClass="text-blue-600"
-          bgClass="bg-blue-50"
-        />
-        <Card
-          title="Low Stock Alerts"
-          value={lowCount}
-          icon={<FiAlertTriangle size={18} />}
-          colorClass="text-amber-600"
-          bgClass="bg-amber-50"
-        />
+      {user?.role === 'owner' && (
+        <div className="dashboard-store-switcher">
+          <label className="dashboard-store-label">Store:</label>
+          <select value={selectedStoreId} onChange={handleStoreChange} className="form-control dashboard-store-select">
+            <option value="">All Stores</option>
+            {stores.map((store) => (
+              <option key={store._id} value={store._id}>{store.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="metrics-grid metrics-grid--four">
+        <Card title="Today's Revenue" value={fmt(todayRevenue)} icon={<FiDollarSign size={18} />} tone="tone-indigo" />
+        <Card title="Today's Orders" value={todaySales.length} icon={<FiShoppingBag size={18} />} tone="tone-emerald" />
+        <Card title="Total Products" value={products.length} icon={<FiPackage size={18} />} tone="tone-blue" />
+        {getStoreId() ? (
+          <Card title="Store Staff" value={dashStats?.staffCount ?? '—'} icon={<FiUsers size={18} />} tone="tone-violet" />
+        ) : (
+          <Card title="Low Stock Alerts" value={lowCount} icon={<FiAlertTriangle size={18} />} tone="tone-amber" />
+        )}
       </div>
 
-      {/* Chart + Top Products */}
-      <div className="grid lg:grid-cols-3 gap-5 mb-5">
-        <div className="card p-5 lg:col-span-2">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Revenue â€” Last 7 Days</h3>
-          <Line data={chartData} options={chartOptions} />
+      <div className="dashboard-overview-grid">
+        <div className="panel panel-body dashboard-chart-panel">
+          <h3 className="panel-title dashboard-panel-title">Revenue - Last 7 Days</h3>
+          {loading ? <div className="empty-state">Loading chart...</div> : <Line data={chartData} options={chartOptions} />}
         </div>
 
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Top Products</h3>
+        <div className="panel panel-body">
+          <h3 className="panel-title dashboard-panel-title">Top Products</h3>
           {topProducts.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">No sales data</p>
+            <p className="empty-state">No sales data</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="dashboard-mini-table">
               <thead>
-                <tr className="text-xs text-slate-400 border-b border-slate-100">
-                  <th className="pb-2 text-left">#</th>
-                  <th className="pb-2 text-left">Product</th>
-                  <th className="pb-2 text-right">Qty</th>
-                  <th className="pb-2 text-right">Revenue</th>
+                <tr>
+                  <th>#</th>
+                  <th>Product</th>
+                  <th className="table-cell-right">Qty</th>
+                  <th className="table-cell-right">Revenue</th>
                 </tr>
               </thead>
               <tbody>
-                {topProducts.map(([name, d], i) => (
-                  <tr key={name} className="border-b border-slate-50">
-                    <td className="py-2 text-slate-400 text-xs">{i + 1}</td>
-                    <td className="py-2 font-medium text-slate-700">{name}</td>
-                    <td className="py-2 text-right text-slate-500">{d.qty}</td>
-                    <td className="py-2 text-right font-semibold text-emerald-600">{fmt(d.revenue)}</td>
+                {topProducts.map(([name, data], index) => (
+                  <tr key={name}>
+                    <td className="table-note">{index + 1}</td>
+                    <td className="table-cell-primary">{name}</td>
+                    <td className="table-cell-right text-muted">{data.qty}</td>
+                    <td className="table-cell-right text-success dashboard-emphasis">{fmt(data.revenue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -172,35 +172,32 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Low Stock + Recent Sales */}
-      <div className="grid lg:grid-cols-2 gap-5">
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Low Stock Items</h3>
+      <div className="dashboard-secondary-grid">
+        <div className="panel panel-body">
+          <h3 className="panel-title dashboard-panel-title">Low Stock Items</h3>
           {lowStockProducts.length === 0 ? (
-            <p className="text-emerald-600 text-sm text-center py-6">âœ“ All stocked up!</p>
+            <p className="empty-state text-success">All stocked up!</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="dashboard-mini-table">
               <thead>
-                <tr className="text-xs text-slate-400 border-b border-slate-100">
-                  <th className="pb-2 text-left">Product</th>
-                  <th className="pb-2 text-left">Category</th>
-                  <th className="pb-2 text-right">Stock</th>
-                  <th className="pb-2 text-right">Threshold</th>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th className="table-cell-right">Stock</th>
+                  <th className="table-cell-right">Threshold</th>
                 </tr>
               </thead>
               <tbody>
-                {lowStockProducts.map((p) => (
-                  <tr key={p._id} className="border-b border-slate-50">
-                    <td className="py-2 font-medium text-red-600">{p.name}</td>
-                    <td className="py-2">
-                      <span className="badge badge-gray">{p.category}</span>
-                    </td>
-                    <td className="py-2 text-right">
-                      <span className={`badge ${p.quantity === 0 ? 'badge-danger' : 'badge-warning'}`}>
-                        {p.quantity} left
+                {lowStockProducts.map((product) => (
+                  <tr key={product._id}>
+                    <td className="table-cell-primary text-danger">{product.name}</td>
+                    <td><span className="badge badge-gray">{product.category}</span></td>
+                    <td className="table-cell-right">
+                      <span className={`badge ${product.quantity === 0 ? 'badge-danger' : 'badge-warning'}`}>
+                        {product.quantity} left
                       </span>
                     </td>
-                    <td className="py-2 text-right text-slate-500">{p.threshold}</td>
+                    <td className="table-cell-right text-muted">{product.threshold}</td>
                   </tr>
                 ))}
               </tbody>
@@ -208,26 +205,24 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="card p-5">
-          <h3 className="text-sm font-semibold text-slate-700 mb-4">Recent Sales</h3>
+        <div className="panel panel-body">
+          <h3 className="panel-title dashboard-panel-title">Recent Sales</h3>
           {recentSales.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">No recent sales</p>
+            <p className="empty-state">No recent sales</p>
           ) : (
-            <div className="space-y-2">
-              {recentSales.map((s) => (
-                <div key={s._id} className="flex items-center justify-between py-2 border-b border-slate-50">
+            <div className="dashboard-sales-list">
+              {recentSales.map((sale) => (
+                <div key={sale._id} className="dashboard-sales-item">
                   <div>
-                    <div className="text-sm font-medium text-slate-700">
-                      {s.customerName || 'Walk-in'}
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      #{s._id.slice(-8).toUpperCase()} Â· {s.items?.length} item(s) Â· {fmtShortDate(s.createdAt)}
+                    <div className="table-cell-primary">{sale.customerName || 'Walk-in'}</div>
+                    <div className="table-cell-secondary">
+                      #{sale._id.slice(-8).toUpperCase()} · {sale.items?.length} item(s) · {fmtShortDate(sale.createdAt)}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-emerald-600">{fmt(s.totalAmount)}</div>
-                    <span className={`badge ${s.paymentMethod === 'cash' ? 'badge-success' : 'badge-info'}`}>
-                      {s.paymentMethod}
+                  <div className="dashboard-sales-meta">
+                    <div className="dashboard-emphasis text-success">{fmt(sale.totalAmount)}</div>
+                    <span className={`badge ${sale.paymentMethod === 'cash' ? 'badge-success' : 'badge-info'}`}>
+                      {sale.paymentMethod}
                     </span>
                   </div>
                 </div>

@@ -283,23 +283,19 @@ export default function Settings() {
 
             <div className="settings-form-row">
               <label>Dark Mode</label>
-              <div className="flex items-center gap-3 mt-1">
+              <div className="settings-theme-row">
                 <button
                   type="button"
                   role="switch"
                   aria-checked={theme === 'dark'}
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-                    theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-200'
-                  }`}
+                  className={`settings-theme-switch ${theme === 'dark' ? 'is-dark' : ''}`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                    className={`settings-theme-thumb ${theme === 'dark' ? 'is-dark' : ''}`}
                   />
                 </button>
-                <span className="text-sm text-slate-700 flex items-center gap-1">
+                <span className="settings-theme-label">
                   {theme === 'dark' ? <><FiMoon size={14} /> Dark Mode On</> : <><FiSun size={14} /> Light Mode</>}
                 </span>
               </div>

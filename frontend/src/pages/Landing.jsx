@@ -1,29 +1,32 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import '../css/landing.css';
+import { FiBarChart2, FiBox, FiCornerUpLeft, FiShoppingCart } from 'react-icons/fi';
 import { apiPost, apiGet } from '../api/axios.js';
+import LandingHeader from '../components/landing/LandingHeader.jsx';
+import LandingFooter from '../components/landing/LandingFooter.jsx';
+import '../styles/landing-page.css';
 
 const FEATURES = [
   {
-    icon: '📦',
+    icon: FiBox,
     colorClass: 'landing-feature-card__icon--indigo',
     title: 'Smart Inventory',
     desc: 'Track stock levels in real time with barcode scanning, low-stock alerts, and multi-store support.',
   },
   {
-    icon: '🛒',
+    icon: FiShoppingCart,
     colorClass: 'landing-feature-card__icon--blue',
     title: 'Point of Sale',
     desc: 'Fast POS checkout with cash, card, and UPI payments. Barcode scanning built in.',
   },
   {
-    icon: '📈',
+    icon: FiBarChart2,
     colorClass: 'landing-feature-card__icon--green',
-    title: 'Reports & Analytics',
+    title: 'Reports and Analytics',
     desc: 'Revenue summaries, profit margins, and transaction reports exportable as PDF or CSV.',
   },
   {
-    icon: '↩️',
+    icon: FiCornerUpLeft,
     colorClass: 'landing-feature-card__icon--orange',
     title: 'Returns Management',
     desc: 'Process returns with automatic restock logic based on return reason.',
@@ -33,43 +36,69 @@ const FEATURES = [
 const STEPS = [
   { title: 'Request Access', desc: 'Submit your details using the form below and our team will review it.' },
   { title: 'Get Approved', desc: 'Our platform admin approves your request and sets up your store.' },
-  { title: 'Configure', desc: 'Add your products, set up staff accounts, and customise settings.' },
+  { title: 'Configure', desc: 'Add your products, set up staff accounts, and customize settings.' },
   { title: 'Go Live', desc: 'Start processing sales, tracking inventory, and viewing reports.' },
+];
+
+const PREVIEW_CARDS = [
+  { label: 'Monthly Revenue', value: 'INR 1,24,500' },
+  { label: "Today's Orders", value: '38' },
+  { label: 'Total Products', value: '284' },
+  { label: 'Low Stock Items', value: '7' },
 ];
 
 const PREVIEW_BARS = [40, 65, 45, 80, 55, 90, 70, 95, 60, 75, 85, 50];
 
 export default function Landing() {
-  const [form, setForm] = useState({ name: '', email: '', businessName: '', message: '', password: '', confirmPassword: '', storeId: '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    businessName: '',
+    message: '',
+    password: '',
+    confirmPassword: '',
+    storeId: '',
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [stores, setStores] = useState([]);
 
-  // Fetch available stores for the selection dropdown
   useEffect(() => {
     apiGet('/stores/public')
       .then((data) => {
-        const arr = Array.isArray(data) ? data : (data.data || []);
-        setStores(arr);
+        const storeList = Array.isArray(data) ? data : data.data || [];
+        setStores(storeList);
       })
-      .catch(() => { /* non-critical */ });
+      .catch(() => setStores([]));
   }, []);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError('');
 
-    if (!form.password) { setError('Password is required.'); return; }
+    if (!form.password) {
+      setError('Password is required.');
+      return;
+    }
+
     if (form.password.length < 8 || !/\d/.test(form.password)) {
       setError('Password must be at least 8 characters and contain at least one number.');
       return;
     }
-    if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
+
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
 
     setSubmitting(true);
+
     try {
       await apiPost('/auth/access-request', form);
       setSubmitted(true);
@@ -82,29 +111,19 @@ export default function Landing() {
 
   return (
     <div className="landing-page">
-      {/* ── Navbar ── */}
-      <nav className="landing-nav">
-        <div className="landing-nav__logo">
-          <div className="landing-nav__logo-icon">S</div>
-          <span className="landing-nav__logo-text">StockPilot</span>
-        </div>
-        <div className="landing-nav__actions">
-          <Link to="/login" className="landing-btn landing-btn--outline">Log In</Link>
-          <Link to="/register" className="landing-btn landing-btn--primary">Register</Link>
-        </div>
-      </nav>
+      <LandingHeader />
 
-      {/* ── Hero ── */}
       <section className="landing-hero">
         <div className="landing-hero__inner">
-          <div className="landing-hero__badge">🚀 SaaS Inventory Platform</div>
+          <div className="landing-hero__badge">SaaS Inventory Platform</div>
           <h1 className="landing-hero__title">
-            Manage Your Inventory<br />
+            Manage Your Inventory
+            <br />
             <span>Like Never Before</span>
           </h1>
           <p className="landing-hero__subtitle">
             StockPilot gives small and medium businesses a powerful, all-in-one inventory,
-            POS, and reporting platform — without the enterprise price tag.
+            POS, and reporting platform without the enterprise price tag.
           </p>
           <div className="landing-hero__ctas">
             <Link to="/register" className="landing-btn landing-btn--cta">Get Started Free</Link>
@@ -113,7 +132,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Features ── */}
       <section className="landing-section">
         <div className="landing-section__inner">
           <div className="landing-section__header">
@@ -124,18 +142,19 @@ export default function Landing() {
             </p>
           </div>
           <div className="landing-features__grid">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="landing-feature-card">
-                <div className={`landing-feature-card__icon ${f.colorClass}`}>{f.icon}</div>
-                <div className="landing-feature-card__title">{f.title}</div>
-                <div className="landing-feature-card__desc">{f.desc}</div>
+            {FEATURES.map(({ icon: Icon, colorClass, title, desc }) => (
+              <div key={title} className="landing-feature-card">
+                <div className={`landing-feature-card__icon ${colorClass}`}>
+                  <Icon size={22} />
+                </div>
+                <div className="landing-feature-card__title">{title}</div>
+                <div className="landing-feature-card__desc">{desc}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── How It Works ── */}
       <section className="landing-section landing-section--alt">
         <div className="landing-section__inner">
           <div className="landing-section__header">
@@ -143,18 +162,17 @@ export default function Landing() {
             <h2 className="landing-section__title">Up and running in minutes</h2>
           </div>
           <div className="landing-steps">
-            {STEPS.map((s, i) => (
-              <div key={s.title} className="landing-step">
-                <div className="landing-step__number">{i + 1}</div>
-                <div className="landing-step__title">{s.title}</div>
-                <div className="landing-step__desc">{s.desc}</div>
+            {STEPS.map((step, index) => (
+              <div key={step.title} className="landing-step">
+                <div className="landing-step__number">{index + 1}</div>
+                <div className="landing-step__title">{step.title}</div>
+                <div className="landing-step__desc">{step.desc}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Dashboard Preview ── */}
       <section className="landing-section">
         <div className="landing-section__inner">
           <div className="landing-section__header">
@@ -163,43 +181,30 @@ export default function Landing() {
           </div>
           <div className="landing-preview">
             <div className="landing-preview__grid">
-              {[
-                { label: 'Monthly Revenue', value: '₹1,24,500' },
-                { label: "Today's Orders", value: '38' },
-                { label: 'Total Products', value: '284' },
-                { label: 'Low Stock Items', value: '7' },
-              ].map((c) => (
-                <div key={c.label} className="landing-preview__card">
-                  <div className="landing-preview__card-label">{c.label}</div>
-                  <div className="landing-preview__card-value">{c.value}</div>
+              {PREVIEW_CARDS.map((card) => (
+                <div key={card.label} className="landing-preview__card">
+                  <div className="landing-preview__card-label">{card.label}</div>
+                  <div className="landing-preview__card-value">{card.value}</div>
                 </div>
               ))}
             </div>
             <div className="landing-preview__chart">
-              {PREVIEW_BARS.map((h, i) => (
-                <div
-                  key={i}
-                  className="landing-preview__bar"
-                  style={{ height: `${h}%` }}
-                />
+              {PREVIEW_BARS.map((height, index) => (
+                <div key={index} className="landing-preview__bar" style={{ height: `${height}%` }} />
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Pricing ── */}
       <section className="landing-section landing-section--alt">
         <div className="landing-section__inner">
           <div className="landing-section__header">
             <div className="landing-section__tag">Pricing</div>
             <h2 className="landing-section__title">Simple, transparent pricing</h2>
-            <p className="landing-section__desc">
-              One flat fee, no hidden charges. Cancel any time.
-            </p>
+            <p className="landing-section__desc">One flat fee, no hidden charges. Cancel any time.</p>
           </div>
           <div className="landing-pricing__grid">
-            {/* Starter */}
             <div className="landing-pricing-card">
               <div className="landing-pricing-card__plan">Starter</div>
               <div className="landing-pricing-card__price">Free</div>
@@ -210,28 +215,28 @@ export default function Landing() {
                 <li>Basic reports</li>
                 <li>Email support</li>
               </ul>
-              <Link to="/register" className="landing-btn landing-btn--outline" style={{ width: '100%', justifyContent: 'center' }}>
+              <Link to="/register" className="landing-btn landing-btn--outline landing-btn--block">
                 Start Free Trial
               </Link>
             </div>
-            {/* Pro */}
+
             <div className="landing-pricing-card landing-pricing-card--popular">
               <div className="landing-pricing-card__badge">Most Popular</div>
               <div className="landing-pricing-card__plan">Pro</div>
-              <div className="landing-pricing-card__price">₹999</div>
+              <div className="landing-pricing-card__price">INR 999</div>
               <div className="landing-pricing-card__period">per month</div>
               <ul className="landing-pricing-card__features">
                 <li>Unlimited products</li>
                 <li>1 store, multi-staff</li>
-                <li>PDF reports & export</li>
-                <li>UPI, cash & card payments</li>
+                <li>PDF reports and export</li>
+                <li>UPI, cash, and card payments</li>
                 <li>Priority support</li>
               </ul>
-              <a href="#request-access" className="landing-btn landing-btn--primary" style={{ width: '100%', justifyContent: 'center' }}>
+              <a href="#request-access" className="landing-btn landing-btn--primary landing-btn--block">
                 Get Started
               </a>
             </div>
-            {/* Enterprise */}
+
             <div className="landing-pricing-card">
               <div className="landing-pricing-card__plan">Enterprise</div>
               <div className="landing-pricing-card__price">Custom</div>
@@ -243,7 +248,7 @@ export default function Landing() {
                 <li>Dedicated support</li>
                 <li>SLA guarantee</li>
               </ul>
-              <a href="#request-access" className="landing-btn landing-btn--outline" style={{ width: '100%', justifyContent: 'center' }}>
+              <a href="#request-access" className="landing-btn landing-btn--outline landing-btn--block">
                 Contact Sales
               </a>
             </div>
@@ -251,7 +256,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Access Request Form ── */}
       <section id="request-access" className="landing-section">
         <div className="landing-section__inner">
           <div className="landing-section__header">
@@ -263,25 +267,19 @@ export default function Landing() {
           </div>
           <div className="landing-request-form">
             {submitted ? (
-              <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
-                <div className="landing-request-form__title">Request Submitted!</div>
+              <div className="landing-success-state">
+                <div className="landing-success-icon">Success</div>
+                <div className="landing-request-form__title">Request Submitted</div>
                 <p className="landing-request-form__subtitle">
-                  We've received your request and will be in touch soon.
-                  In the meantime, you can <Link to="/login">log in</Link> if you already have an account.
+                  We received your request and will be in touch soon. If you already have an account,
+                  you can <Link to="/login"> log in</Link>.
                 </p>
               </div>
             ) : (
               <>
                 <div className="landing-request-form__title">Request Access</div>
-                <p className="landing-request-form__subtitle">
-                  Tell us about yourself and your business.
-                </p>
-                {error && (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
-                    {error}
-                  </div>
-                )}
+                <p className="landing-request-form__subtitle">Tell us about yourself and your business.</p>
+                {error && <div className="landing-alert">{error}</div>}
                 <form onSubmit={handleSubmit}>
                   <div className="landing-form-group">
                     <label>Full Name *</label>
@@ -299,9 +297,9 @@ export default function Landing() {
                     <div className="landing-form-group">
                       <label>Select Store (optional)</label>
                       <select name="storeId" value={form.storeId} onChange={handleChange}>
-                        <option value="">— Create a new store —</option>
-                        {stores.map((s) => (
-                          <option key={s._id} value={s._id}>{s.shopName || s.name}</option>
+                        <option value="">Create a new store</option>
+                        {stores.map((store) => (
+                          <option key={store._id} value={store._id}>{store.shopName || store.name}</option>
                         ))}
                       </select>
                     </div>
@@ -318,7 +316,7 @@ export default function Landing() {
                     <label>Confirm Password *</label>
                     <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} required placeholder="Re-enter your password" />
                   </div>
-                  <button type="submit" disabled={submitting} className="landing-btn landing-btn--primary" style={{ width: '100%', justifyContent: 'center', marginTop: '8px' }}>
+                  <button type="submit" disabled={submitting} className="landing-btn landing-btn--primary landing-btn--block landing-form-submit">
                     {submitting ? 'Submitting...' : 'Submit Request'}
                   </button>
                 </form>
@@ -328,7 +326,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── CTA Banner ── */}
       <section className="landing-cta-banner">
         <h2 className="landing-cta-banner__title">Ready to get started?</h2>
         <p className="landing-cta-banner__subtitle">
@@ -340,10 +337,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="landing-footer">
-        <p>© {new Date().getFullYear()} StockPilot — Inventory Avengers. All rights reserved.</p>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }

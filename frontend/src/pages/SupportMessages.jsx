@@ -5,6 +5,7 @@ import Alert from '../components/ui/Alert.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { apiGet, apiPost, apiPatch } from '../api/axios.js';
 import { fmtDate } from '../utils/helpers.js';
+import '../styles/support-messages.css';
 
 export default function SupportMessages() {
   const [tab, setTab] = useState('inbox');
@@ -22,10 +23,7 @@ export default function SupportMessages() {
   const loadMessages = useCallback(async () => {
     setLoading(true);
     try {
-      const [inboxData, sentData] = await Promise.all([
-        apiGet('/messages/inbox'),
-        apiGet('/messages/sent'),
-      ]);
+      const [inboxData, sentData] = await Promise.all([apiGet('/messages/inbox'), apiGet('/messages/sent')]);
       setInbox(inboxData.data || []);
       setSent(sentData.data || []);
     } catch (err) {
@@ -35,7 +33,9 @@ export default function SupportMessages() {
     }
   }, []);
 
-  useEffect(() => { loadMessages(); }, [loadMessages]);
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -45,11 +45,7 @@ export default function SupportMessages() {
     }
     setSending(true);
     try {
-      await apiPost('/messages', {
-        subject: compose.subject,
-        body: compose.body,
-        parentMessageId: replyTo?._id || undefined,
-      });
+      await apiPost('/messages', { subject: compose.subject, body: compose.body, parentMessageId: replyTo?._id || undefined });
       showAlert('Message sent successfully.', 'success');
       setCompose({ subject: '', body: '' });
       setReplyTo(null);
@@ -65,47 +61,43 @@ export default function SupportMessages() {
   const markRead = async (id) => {
     try {
       await apiPatch(`/messages/${id}/read`);
-      setInbox((prev) => prev.map((m) => m._id === id ? { ...m, read: true } : m));
-    } catch { /* non-critical */ }
+      setInbox((prev) => prev.map((message) => (message._id === id ? { ...message, read: true } : message)));
+    } catch {}
   };
 
-  const handleReply = (msg) => {
-    setReplyTo(msg);
-    setCompose({ subject: `Re: ${msg.subject}`, body: '' });
+  const handleReply = (message) => {
+    setReplyTo(message);
+    setCompose({ subject: `Re: ${message.subject}`, body: '' });
     setTab('compose');
   };
 
-  const unreadCount = inbox.filter((m) => !m.read).length;
+  const unreadCount = inbox.filter((message) => !message.read).length;
+  const tabs = [
+    { key: 'inbox', label: `Inbox${unreadCount > 0 ? ` (${unreadCount})` : ''}`, icon: <FiInbox size={14} /> },
+    { key: 'sent', label: 'Sent', icon: <FiSend size={14} /> },
+    { key: 'compose', label: 'New Message', icon: <FiMessageSquare size={14} /> },
+  ];
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="page-header">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Help &amp; Support</h2>
-          <p className="text-sm text-slate-500">Contact the platform team for assistance</p>
+          <h2 className="page-title">Help &amp; Support</h2>
+          <p className="page-subtitle">Contact the platform team for assistance</p>
         </div>
         <button onClick={loadMessages} className="btn btn-outline btn-sm" title="Refresh">
           <FiRefreshCw size={13} />
         </button>
       </div>
 
-      {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} className="mb-4" />}
+      {alert && <Alert message={alert.message} type={alert.type} onClose={clearAlert} />}
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-5 border-b border-slate-100">
-        {[
-          { key: 'inbox', label: `Inbox${unreadCount > 0 ? ` (${unreadCount})` : ''}`, icon: <FiInbox size={14} /> },
-          { key: 'sent', label: 'Sent', icon: <FiSend size={14} /> },
-          { key: 'compose', label: 'New Message', icon: <FiMessageSquare size={14} /> },
-        ].map(({ key, label, icon }) => (
+      <div className="support-tabs">
+        {tabs.map(({ key, label, icon }) => (
           <button
             key={key}
             onClick={() => { setTab(key); if (key === 'compose' && !replyTo) setCompose({ subject: '', body: '' }); }}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px ${
-              tab === key
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
+            className={`support-tab${tab === key ? ' is-active' : ''}`}
           >
             {icon} {label}
           </button>
@@ -116,40 +108,26 @@ export default function SupportMessages() {
         <LoadingSpinner />
       ) : (
         <>
-          {/* Inbox */}
           {tab === 'inbox' && (
             inbox.length === 0 ? (
-              <div className="card p-12 text-center">
-                <FiInbox size={40} className="text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">No messages in your inbox.</p>
+              <div className="panel empty-state support-empty">
+                <FiInbox size={40} className="empty-state-icon" />
+                <p>No messages in your inbox.</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
-                {inbox.map((msg) => (
-                  <div
-                    key={msg._id}
-                    className={`card p-4 cursor-pointer transition-all hover:shadow-md ${!msg.read ? 'border-l-4 border-l-indigo-500' : ''}`}
-                    onClick={() => markRead(msg._id)}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {!msg.read && <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />}
-                          <p className={`text-sm font-semibold text-slate-800 truncate ${!msg.read ? '' : 'font-medium'}`}>
-                            {msg.subject}
-                          </p>
+              <div className="support-message-list">
+                {inbox.map((message) => (
+                  <div key={message._id} className={`panel panel-body support-message-card${!message.read ? ' is-unread' : ''}`} onClick={() => markRead(message._id)}>
+                    <div className="support-message-row">
+                      <div className="support-message-main">
+                        <div className="support-message-title-row">
+                          {!message.read && <span className="support-message-dot" />}
+                          <p className="support-message-title">{message.subject}</p>
                         </div>
-                        <p className="text-xs text-slate-500 mb-2">
-                          From: {msg.fromId?.name || 'Support Team'} Â· {fmtDate(msg.sentAt)}
-                        </p>
-                        <p className="text-sm text-slate-600 line-clamp-2">{msg.body}</p>
+                        <p className="support-message-meta">From: {message.fromId?.name || 'Support Team'} · {fmtDate(message.sentAt)}</p>
+                        <p className="support-message-body">{message.body}</p>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleReply(msg); }}
-                        className="btn btn-outline btn-sm shrink-0"
-                      >
-                        Reply
-                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleReply(message); }} className="btn btn-outline btn-sm">Reply</button>
                     </div>
                   </div>
                 ))}
@@ -157,68 +135,45 @@ export default function SupportMessages() {
             )
           )}
 
-          {/* Sent */}
           {tab === 'sent' && (
             sent.length === 0 ? (
-              <div className="card p-12 text-center">
-                <FiSend size={40} className="text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">No sent messages yet.</p>
+              <div className="panel empty-state support-empty">
+                <FiSend size={40} className="empty-state-icon" />
+                <p>No sent messages yet.</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-3">
-                {sent.map((msg) => (
-                  <div key={msg._id} className="card p-4">
-                    <p className="text-sm font-semibold text-slate-800 mb-1">{msg.subject}</p>
-                    <p className="text-xs text-slate-500 mb-2">
-                      To: {msg.toId?.name || 'Support Team'} Â· {fmtDate(msg.sentAt)}
-                    </p>
-                    <p className="text-sm text-slate-600 line-clamp-2">{msg.body}</p>
+              <div className="support-message-list">
+                {sent.map((message) => (
+                  <div key={message._id} className="panel panel-body">
+                    <p className="support-message-title">{message.subject}</p>
+                    <p className="support-message-meta">To: {message.toId?.name || 'Support Team'} · {fmtDate(message.sentAt)}</p>
+                    <p className="support-message-body">{message.body}</p>
                   </div>
                 ))}
               </div>
             )
           )}
 
-          {/* Compose */}
           {tab === 'compose' && (
-            <div className="card p-6 max-w-2xl">
+            <div className="panel panel-body support-compose-panel">
               {replyTo && (
-                <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm text-slate-600">
-                  <span className="font-medium">Replying to:</span> {replyTo.subject}
-                  <button
-                    onClick={() => { setReplyTo(null); setCompose({ subject: '', body: '' }); }}
-                    className="ml-2 text-slate-400 hover:text-red-500"
-                  >
-                    âœ•
-                  </button>
+                <div className="support-reply-banner">
+                  <span><strong>Replying to:</strong> {replyTo.subject}</span>
+                  <button onClick={() => { setReplyTo(null); setCompose({ subject: '', body: '' }); }} className="support-reply-close">×</button>
                 </div>
               )}
-              <form onSubmit={handleSend} className="flex flex-col gap-4">
+              <form onSubmit={handleSend} className="stack-lg">
                 <div>
                   <label className="form-label">Subject *</label>
-                  <input
-                    className="form-control"
-                    value={compose.subject}
-                    onChange={(e) => setCompose({ ...compose, subject: e.target.value })}
-                    placeholder="Brief description of your issue"
-                    required
-                  />
+                  <input className="form-control" value={compose.subject} onChange={(e) => setCompose({ ...compose, subject: e.target.value })} placeholder="Brief description of your issue" required />
                 </div>
                 <div>
                   <label className="form-label">Message *</label>
-                  <textarea
-                    className="form-control"
-                    rows={6}
-                    value={compose.body}
-                    onChange={(e) => setCompose({ ...compose, body: e.target.value })}
-                    placeholder="Describe your issue in detail..."
-                    required
-                  />
+                  <textarea className="form-control support-compose-input" rows={6} value={compose.body} onChange={(e) => setCompose({ ...compose, body: e.target.value })} placeholder="Describe your issue in detail..." required />
                 </div>
                 <div>
                   <button type="submit" className="btn btn-primary" disabled={sending}>
-                    <FiSend size={14} />
-                    {sending ? 'Sending...' : 'Send Message'}
+                    <FiSend size={14} /> {sending ? 'Sending...' : 'Send Message'}
                   </button>
                 </div>
               </form>
