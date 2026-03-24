@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiShield, FiUserPlus } from 'react-icons/fi';
 import useAuthStore from '../store/authStore.js';
 import Alert from '../components/ui/Alert.jsx';
-import axios from 'axios';
+import api from '../api/axios.js';
 
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
@@ -24,9 +24,7 @@ export default function Register() {
   const [registered, setRegistered] = useState(false);
 
   useEffect(() => {
-    // Fetch active stores for the dropdown — unauthenticated request
-    const base = import.meta.env.VITE_API_URL || '/api';
-    axios.get(`${base}/stores/public`)
+    api.get('/stores/public')
       .then((res) => setStores(res.data || []))
       .catch(() => setStores([]))
       .finally(() => setStoresLoading(false));
