@@ -6,6 +6,8 @@ export default function RoleRoute({ roles, children }) {
   const { isAuthenticated, user, featureFlagsLoaded } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!featureFlagsLoaded) return <FullPageLoader />;
-  if (!user || !roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+  if (!user || !roles.includes(user.role)) {
+    return <Navigate to={user?.role === 'superuser' ? '/superuser' : '/dashboard'} replace />;
+  }
   return children;
 }

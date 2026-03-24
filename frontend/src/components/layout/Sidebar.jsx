@@ -7,6 +7,7 @@ import {
 import useAuthStore from '../../store/authStore.js';
 
 const NAV_ITEMS = [
+  { to: '/superuser', icon: FiShield, label: 'Admin Panel', roles: ['superuser'] },
   { to: '/dashboard', icon: FiGrid, label: 'Dashboard' },
   { to: '/inventory', icon: FiPackage, label: 'Inventory' },
   { to: '/sales', icon: FiShoppingCart, label: 'Sales / POS' },
@@ -22,9 +23,13 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const user = useAuthStore((s) => s.user);
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.roles || (user && item.roles.includes(user.role))
-  );
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (!user) return false;
+    if (user.role === 'superuser') {
+      return item.roles?.includes('superuser');
+    }
+    return !item.roles || item.roles.includes(user.role);
+  });
 
   return (
     <aside className="sidebar">

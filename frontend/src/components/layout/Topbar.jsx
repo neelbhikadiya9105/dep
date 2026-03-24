@@ -5,6 +5,7 @@ import NotificationDropdown from '../NotificationDropdown.jsx';
 import useAuthStore from '../../store/authStore.js';
 
 const PAGE_TITLES = {
+  '/superuser': 'Superuser Admin Panel',
   '/dashboard': 'Dashboard',
   '/inventory': 'Inventory',
   '/sales': 'Sales / POS',

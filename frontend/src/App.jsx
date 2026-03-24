@@ -29,6 +29,14 @@ function FeatureFlagRoute({ feature, children }) {
   return children;
 }
 
+function DashboardEntryRoute() {
+  const user = useAuthStore((s) => s.user);
+  if (user?.role === 'superuser') {
+    return <Navigate to="/superuser" replace />;
+  }
+  return <Dashboard />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -45,7 +53,7 @@ export default function App() {
         <Route path="/approvals" element={<Navigate to="/employees" replace />} />
 
         {/* Protected — any authenticated user */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardEntryRoute /></ProtectedRoute>} />
         <Route path="/inventory" element={<RoleRoute roles={['owner', 'manager', 'staff']}><Inventory /></RoleRoute>} />
         <Route path="/sales" element={<RoleRoute roles={['owner', 'manager', 'staff']}><Sales /></RoleRoute>} />
         <Route path="/returns" element={

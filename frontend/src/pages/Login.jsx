@@ -26,8 +26,8 @@ export default function Login() {
     clearAlert();
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      navigate('/dashboard', { replace: true });
+      const data = await login(email.trim(), password);
+      navigate(data.user?.role === 'superuser' ? '/superuser' : '/dashboard', { replace: true });
     } catch (err) {
       showAlert(err.response?.data?.message || err.message || 'Login failed');
     } finally {

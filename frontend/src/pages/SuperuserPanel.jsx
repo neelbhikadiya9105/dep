@@ -66,7 +66,7 @@ function DashboardTab() {
           { label: 'On Trial', value: data.trialShops, icon: <FiClock />, color: 'yellow' },
           { label: 'Pending Requests', value: data.pendingRequests, icon: <FiAlertTriangle />, color: 'red' },
           { label: 'New This Month', value: data.newShopsThisMonth, icon: <FiHome />, color: 'blue' },
-          { label: 'MRR (â‚¹)', value: `â‚¹${(data.mrr || 0).toLocaleString()}`, icon: <FiBarChart2 />, color: 'green' },
+          { label: 'MRR (INR)', value: `INR ${(data.mrr || 0).toLocaleString()}`, icon: <FiBarChart2 />, color: 'green' },
         ].map((card) => (
           <div key={card.label} className="superuser-stat-card">
             <div className={`superuser-stat-card__icon superuser-stat-card__icon--${card.color}`}>{card.icon}</div>
@@ -145,7 +145,7 @@ function ShopsTab({ showAlert, loadData, requests, owners, shops }) {
     try {
       const res = await apiPost(`/superuser/access-requests/${id}/approve`, {});
       const msg = res.tempPassword
-        ? `Owner "${res.owner?.name}" created. Temp password: ${res.tempPassword} â€” share securely.`
+        ? `Owner "${res.owner?.name}" created. Temp password: ${res.tempPassword} - share securely.`
         : `Owner "${res.owner?.name}" (${res.owner?.email}) created. They can log in with their chosen password.`;
       showAlert(msg, 'success');
       await loadData();
@@ -244,7 +244,7 @@ function ShopsTab({ showAlert, loadData, requests, owners, shops }) {
               <div className="superuser-request-row__info">
                 <div className="superuser-request-row__name">{r.name}</div>
                 <div className="superuser-request-row__email">{r.email}</div>
-                {r.businessName && <div className="superuser-request-row__business">ðŸª {r.businessName}</div>}
+                {r.businessName && <div className="superuser-request-row__business">Store: {r.businessName}</div>}
                 {r.message && <div className="superuser-request-row__business" style={{ fontStyle: 'italic' }}>"{r.message}"</div>}
                 <div className="superuser-request-row__meta">Submitted {fmtDate(r.createdAt)}</div>
               </div>
@@ -283,7 +283,7 @@ function ShopsTab({ showAlert, loadData, requests, owners, shops }) {
                 <div className="superuser-owner-row__avatar">{shop.name?.[0]?.toUpperCase() || 'S'}</div>
                 <div className="superuser-owner-row__info">
                   <div className="superuser-owner-row__name">{shop.name} <span style={{ fontSize: '11px', color: '#94a3b8' }}>({shop.code})</span></div>
-                  <div className="superuser-owner-row__email">{shop.ownerId?.name} Â· {shop.ownerId?.email}</div>
+                  <div className="superuser-owner-row__email">{shop.ownerId?.name} | {shop.ownerId?.email}</div>
                   <div className="superuser-owner-row__store">
                     {shop.trialExpiresAt && <span>Trial: {fmtDate(shop.trialExpiresAt)}</span>}
                   </div>
@@ -305,7 +305,7 @@ function ShopsTab({ showAlert, loadData, requests, owners, shops }) {
                     <div className="su-detail-title">{shopDetail.name}</div>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>{shopDetail.code}</div>
                   </div>
-                  <button className="superuser-btn" onClick={closeDetail}>âœ•</button>
+                  <button className="superuser-btn" onClick={closeDetail}>Close</button>
                 </div>
 
                 <div className="su-detail-body">
@@ -314,7 +314,7 @@ function ShopsTab({ showAlert, loadData, requests, owners, shops }) {
                     <div className="su-detail-field"><span>Email</span><strong>{shopDetail.ownerId?.email}</strong></div>
                     <div className="su-detail-field"><span>Status</span><StatusBadge status={shopDetail.status} /></div>
                     <div className="su-detail-field"><span>Plan</span><PlanBadge plan={shopDetail.plan} /></div>
-                    <div className="su-detail-field"><span>Trial Expiry</span><strong>{shopDetail.trialExpiresAt ? fmtDate(shopDetail.trialExpiresAt) : 'â€”'}</strong></div>
+                    <div className="su-detail-field"><span>Trial Expiry</span><strong>{shopDetail.trialExpiresAt ? fmtDate(shopDetail.trialExpiresAt) : '-'}</strong></div>
                     <div className="su-detail-field"><span>Last Login</span><strong>{shopDetail.ownerId?.lastLogin ? fmtDate(shopDetail.ownerId.lastLogin) : 'Never'}</strong></div>
                     <div className="su-detail-field"><span>Total Orders</span><strong>{shopDetail.totalOrders}</strong></div>
                     <div className="su-detail-field"><span>Total Products</span><strong>{shopDetail.totalProducts}</strong></div>
@@ -381,7 +381,7 @@ function ShopsTab({ showAlert, loadData, requests, owners, shops }) {
               <div className="superuser-owner-row__info">
                 <div className="superuser-owner-row__name">{o.displayName || o.name}</div>
                 <div className="superuser-owner-row__email">{o.email}</div>
-                {o.storeId && <div className="superuser-owner-row__store">ðŸª {o.storeId.name} ({o.storeId.code})</div>}
+                {o.storeId && <div className="superuser-owner-row__store">Store: {o.storeId.name} ({o.storeId.code})</div>}
               </div>
               <StatusBadge status={o.status} />
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -443,7 +443,7 @@ function BillingTab({ showAlert }) {
               <input className="su-input" type="number" placeholder="Discount" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} required style={{ flex: 1 }} />
               <select className="su-filter-select" value={form.discountType} onChange={(e) => setForm({ ...form, discountType: e.target.value })}>
                 <option value="percent">%</option>
-                <option value="fixed">â‚¹ Fixed</option>
+                <option value="fixed">INR Fixed</option>
               </select>
             </div>
             <input className="su-input" type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} placeholder="Expiry date (optional)" />
@@ -461,9 +461,9 @@ function BillingTab({ showAlert }) {
               <div className="superuser-request-row__info">
                 <div className="superuser-request-row__name">{c.code}</div>
                 <div className="superuser-request-row__email">
-                  {c.discountType === 'percent' ? `${c.discount}% off` : `â‚¹${c.discount} off`}
-                  {c.expiresAt ? ` Â· Expires ${fmtDate(c.expiresAt)}` : ' Â· No expiry'}
-                  {c.usageLimit > 0 ? ` Â· ${c.usedCount}/${c.usageLimit} used` : ' Â· Unlimited'}
+                  {c.discountType === 'percent' ? `${c.discount}% off` : `INR ${c.discount} off`}
+                  {c.expiresAt ? ` | Expires ${fmtDate(c.expiresAt)}` : ' | No expiry'}
+                  {c.usageLimit > 0 ? ` | ${c.usedCount}/${c.usageLimit} used` : ' | Unlimited'}
                 </div>
               </div>
               <button className="superuser-btn superuser-btn--delete" onClick={() => handleDelete(c._id)}><FiTrash2 size={13} /></button>
@@ -545,7 +545,7 @@ function LogsTab() {
                   <td style={{ whiteSpace: 'nowrap', fontSize: '11px', color: '#94a3b8' }}>{new Date(l.timestamp).toLocaleString()}</td>
                   <td>{l.actorId?.name || <span style={{ color: '#94a3b8' }}>System</span>}</td>
                   <td><StatusBadge status={l.actorRole} /></td>
-                  <td style={{ fontSize: '12px', color: '#64748b' }}>{l.storeId?.name || 'â€”'}</td>
+                  <td style={{ fontSize: '12px', color: '#64748b' }}>{l.storeId?.name || '-'}</td>
                   <td><code style={{ fontSize: '11px', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{l.action}</code></td>
                   <td style={{ fontSize: '11px', color: '#94a3b8', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {JSON.stringify(l.metadata || {})}
@@ -556,9 +556,9 @@ function LogsTab() {
           </table>
           {pages > 1 && (
             <div className="su-pagination">
-              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="superuser-btn superuser-btn--activate">â† Prev</button>
+              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="superuser-btn superuser-btn--activate">Prev</button>
               <span style={{ fontSize: '13px', color: '#64748b' }}>Page {page} of {pages}</span>
-              <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="superuser-btn superuser-btn--activate">Next â†’</button>
+              <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="superuser-btn superuser-btn--activate">Next</button>
             </div>
           )}
         </>
@@ -713,7 +713,7 @@ function InboxTab({ showAlert }) {
                 {msg.subject}
               </div>
               <div className="superuser-request-row__email">
-                From: {msg.fromId?.name || 'â€”'} Â· {msg.storeId?.name || msg.storeId || 'â€”'} Â· {fmtDate(msg.sentAt)}
+                From: {msg.fromId?.name || '-'} | {msg.storeId?.name || msg.storeId || '-'} | {fmtDate(msg.sentAt)}
               </div>
               <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{msg.body}</div>
             </div>
@@ -793,12 +793,12 @@ export default function SuperuserPanel() {
   const trialShops = shops.filter((s) => s.status === 'trial').length;
 
   const TABS = [
-    { key: 'dashboard', label: 'ðŸ“Š Dashboard', icon: <FiBarChart2 /> },
-    { key: 'shops', label: `ðŸª Shops${pendingCount > 0 ? ` (${pendingCount})` : ''}`, icon: <FiShield /> },
-    { key: 'billing', label: 'ðŸ’³ Billing', icon: <FiTag /> },
-    { key: 'logs', label: 'ðŸ“‹ Logs', icon: <FiFileText /> },
-    { key: 'comms', label: 'ðŸ’¬ Communications', icon: <FiMessageSquare /> },
-    { key: 'inbox', label: 'ðŸ“© Support Inbox', icon: <FiMessageSquare /> },
+    { key: 'dashboard', label: 'Dashboard', icon: <FiBarChart2 /> },
+    { key: 'shops', label: `Shops${pendingCount > 0 ? ` (${pendingCount})` : ''}`, icon: <FiShield /> },
+    { key: 'billing', label: 'Billing', icon: <FiTag /> },
+    { key: 'logs', label: 'Logs', icon: <FiFileText /> },
+    { key: 'comms', label: 'Communications', icon: <FiMessageSquare /> },
+    { key: 'inbox', label: 'Support Inbox', icon: <FiMessageSquare /> },
   ];
 
   return (
