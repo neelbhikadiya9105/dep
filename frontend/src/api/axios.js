@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://dep-ikfu.onrender.com/api',
+  baseURL: 'https://dep-ikuf.onrender.com/api',
   timeout: 15000,
 });
 
